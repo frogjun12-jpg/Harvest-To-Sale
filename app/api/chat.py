@@ -10,6 +10,7 @@ router = APIRouter()
 
 class ChatRequest(BaseModel):
     question: str = Field(..., min_length=1)
+    history: list[dict[str, str]] = Field(default_factory=list)
 
 
 class SourceChunk(BaseModel):
@@ -29,7 +30,7 @@ def chat(request: ChatRequest) -> ChatResponse:
     try:
         chunks = retrieve_context(request.question)
         prompt = build_prompt(request.question, chunks)
-        answer = generate_answer(prompt)
+        answer = generate_answer(prompt, history=request.history[-3:])
         return ChatResponse(answer=answer, sources=[SourceChunk(**chunk) for chunk in chunks])
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc

@@ -97,6 +97,8 @@ st.markdown(
 
 if "question" not in st.session_state:
     st.session_state.question = ""
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = []
 
 example_questions = [
     "사과 선별 기준은 무엇인가요?",
@@ -118,15 +120,29 @@ question = st.text_area(
     label_visibility="collapsed",
 )
 
+if st.session_state.chat_history:
+    st.markdown('<div class="section-label">최근 대화</div>', unsafe_allow_html=True)
+    for turn in st.session_state.chat_history[-3:]:
+        st.chat_message("user").write(turn["user"])
+        st.chat_message("assistant").write(turn["assistant"])
+
 if st.button("질문하기", type="primary", disabled=not question.strip()):
     with st.spinner("로컬 LLM이 답변을 생성하는 중입니다..."):
         try:
-            response = requests.post(CHAT_API_URL, json={"question": question}, timeout=120)
+            response = requests.post(
+                CHAT_API_URL,
+                json={"question": question, "history": st.session_state.chat_history[-3:]},
+                timeout=120,
+            )
             response.raise_for_status()
             data = response.json()
         except requests.RequestException as exc:
             st.error(f"API 호출 실패: {exc}")
         else:
+            st.session_state.chat_history.append(
+                {"user": question, "assistant": data["answer"]}
+            )
+            st.session_state.chat_history = st.session_state.chat_history[-3:]
             safe_answer = html.escape(data["answer"]).replace("\n", "<br>")
             st.markdown('<div class="section-label">답변</div>', unsafe_allow_html=True)
             st.markdown(f'<div class="answer-box">{safe_answer}</div>', unsafe_allow_html=True)

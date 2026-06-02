@@ -40,20 +40,35 @@ def contains_disallowed_foreign_text(text: str) -> bool:
     return contains_hanja_or_chinese(text) or contains_excessive_english(text)
 
 
-def generate_answer(prompt: str) -> str:
+def build_messages(prompt: str, history: list[dict[str, str]] | None = None) -> list[dict[str, str]]:
+    messages = [
+        {
+            "role": "system",
+            "content": (
+                "당신은 과일 농장, 선별, 가격산정, 판매 업무를 돕는 친절한 한국어 업무 도우미입니다. "
+                "항상 한국어로만 답변하세요. 중국어, 영어, 한자 중심 표현을 사용하지 마세요. "
+                "사용자가 명시적으로 요청하지 않는 한 내부 검색, RAG, 출처, 문서를 언급하지 마세요. "
+                "최근 대화는 사용자의 후속 질문 의도를 이해하는 데만 활용하고, 업무 기준은 현재 질문의 참고 정보를 우선하세요."
+            ),
+        }
+    ]
+
+    for turn in (history or [])[-3:]:
+        user_message = turn.get("user", "").strip()
+        assistant_message = turn.get("assistant", "").strip()
+        if user_message:
+            messages.append({"role": "user", "content": user_message})
+        if assistant_message:
+            messages.append({"role": "assistant", "content": assistant_message})
+
+    messages.append({"role": "user", "content": prompt})
+    return messages
+
+
+def generate_answer(prompt: str, history: list[dict[str, str]] | None = None) -> str:
     response = client.chat(
         model=CHAT_MODEL,
-        messages=[
-            {
-                "role": "system",
-                "content": (
-                    "당신은 과일 농장, 선별, 가격산정, 판매 업무를 돕는 친절한 한국어 업무 도우미입니다. "
-                    "항상 한국어로만 답변하세요. 중국어, 영어, 한자 중심 표현을 사용하지 마세요. "
-                    "사용자가 명시적으로 요청하지 않는 한 내부 검색, RAG, 출처, 문서를 언급하지 마세요."
-                ),
-            },
-            {"role": "user", "content": prompt},
-        ],
+        messages=build_messages(prompt, history),
         options={"temperature": 0.2},
     )
     answer = response["message"]["content"]
