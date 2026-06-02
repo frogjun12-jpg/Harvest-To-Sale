@@ -1,6 +1,6 @@
 # Fruits Local LLM RAG MVP
 
-AI 기반 과일 자동 수확, 선별, 가격산정, 판매등록 시스템을 위한 Local LLM + RAG 챗봇 MVP입니
+AI 기반 과일 자동 수확, 선별, 가격산정, 판매등록 시스템을 위한 Local LLM + RAG 챗봇 MVP입니다.
 
 ## Stack
 
