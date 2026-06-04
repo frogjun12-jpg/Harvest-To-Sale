@@ -3,7 +3,11 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-from app.db.vector_search import upsert_document_chunk
+from app.db.vector_search import (
+    delete_chunks_except_sources,
+    delete_document_chunks,
+    upsert_document_chunk,
+)
 from app.rag.embedder import embed_text
 
 load_dotenv()
@@ -37,6 +41,7 @@ def ingest_markdown_file(path: Path) -> int:
     chunks = chunk_text(content)
     relative_path = path.relative_to(PROJECT_ROOT).as_posix()
 
+    delete_document_chunks(relative_path)
     for index, chunk in enumerate(chunks):
         embedding = embed_text(chunk)
         upsert_document_chunk(relative_path, index, chunk, embedding)
@@ -47,8 +52,15 @@ def ingest_markdown_file(path: Path) -> int:
 def ingest_all() -> None:
     markdown_files = sorted(RAG_DOCS_DIR.glob("**/*.md"))
     if not markdown_files:
+        removed_count = delete_chunks_except_sources([])
         print(f"No Markdown files found in {RAG_DOCS_DIR}")
+        print(f"Removed {removed_count} stale chunks from MariaDB.")
         return
+
+    source_paths = [path.relative_to(PROJECT_ROOT).as_posix() for path in markdown_files]
+    removed_count = delete_chunks_except_sources(source_paths)
+    if removed_count:
+        print(f"Removed {removed_count} stale chunks from MariaDB.")
 
     total_chunks = 0
     for path in markdown_files:
