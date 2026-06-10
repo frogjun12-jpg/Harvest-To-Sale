@@ -68,6 +68,19 @@ st.markdown(
     .metric-label { color: #68746b; font-size: .78rem; font-weight: 800; margin-bottom: .25rem; }
     .metric-value { color: #16241d; font-size: 1.48rem; font-weight: 900; line-height: 1.15; }
     .metric-note { color: #7a837b; font-size: .78rem; margin-top: .25rem; }
+    .feature-card {
+        background: #fffefa;
+        border: 1px solid rgba(23,35,29,.13);
+        border-radius: 8px;
+        padding: .95rem 1rem;
+        min-height: 132px;
+        box-shadow: 0 8px 20px rgba(23,35,29,.045);
+        margin-bottom: .35rem;
+    }
+    .feature-icon { font-size: 1.45rem; margin-bottom: .2rem; }
+    .feature-title { color: #17231d; font-weight: 950; font-size: 1.02rem; margin-bottom: .25rem; }
+    .feature-metric { color: #16713a; font-weight: 950; font-size: 1.18rem; line-height: 1.2; }
+    .feature-note { color: #6d7770; font-size: .83rem; line-height: 1.45; margin-top: .22rem; }
     .answer-box { color: #26362d; line-height: 1.7; margin-top: .3rem; }
     .product-title { color: #17231d; font-weight: 900; font-size: 1.03rem; margin-bottom: .2rem; }
     .product-meta { color: #56635b; line-height: 1.55; font-size: .9rem; }
@@ -233,6 +246,29 @@ def render_metric(label: str, value: str, note: str = "", tone: str = "") -> Non
         """,
         unsafe_allow_html=True,
     )
+
+
+def render_feature_card(
+    icon: str,
+    title: str,
+    metric: str,
+    note: str,
+    page_name: str,
+) -> None:
+    st.markdown(
+        f"""
+        <div class="feature-card">
+          <div class="feature-icon">{html.escape(icon)}</div>
+          <div class="feature-title">{html.escape(title)}</div>
+          <div class="feature-metric">{html.escape(metric)}</div>
+          <div class="feature-note">{html.escape(note)}</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    if st.button(f"{title}로 이동", key=f"dashboard_go_{page_name}", use_container_width=True):
+        st.session_state.admin_page = page_name
+        st.rerun()
 
 
 def render_product_card(product: dict) -> None:
@@ -604,9 +640,6 @@ with st.sidebar:
         unsafe_allow_html=True,
     )
     st.caption(f"{admin_user['display_name']}님 로그인 · {CHAT_PROVIDER_LABEL}")
-    if st.button("로그아웃", use_container_width=True):
-        st.session_state.pop("admin_user", None)
-        st.rerun()
     nav_items = [
         ("대시보드", "📊  대시보드"),
         ("판매상품등록", "📝  판매상품등록"),
@@ -642,6 +675,14 @@ with st.sidebar:
         unsafe_allow_html=True,
     )
     render_free_sidebar_ad()
+
+top_left, top_right = st.columns([5, 1])
+with top_left:
+    st.caption(f"{admin_user['display_name']}님 로그인 · {CHAT_PROVIDER_LABEL}")
+with top_right:
+    if st.button("로그아웃", key="top_logout", use_container_width=True):
+        st.session_state.pop("admin_user", None)
+        st.rerun()
 
 st.markdown(
     """
@@ -687,7 +728,61 @@ latest_date, doc_status = latest_price_info()
 latest_news_date, news_doc_status = latest_news_info()
 
 if selected_page == "대시보드":
-    st.markdown('<div class="section-label">🍎 크기·품질별 사과 재고</div>', unsafe_allow_html=True)
+    total_available_kg = sum(int(product["available_kg"]) for product in products)
+    total_listed_kg = sum(int(product["listed_kg"]) for product in products)
+
+    st.markdown('<div class="section-label">📊 기능 바로가기</div>', unsafe_allow_html=True)
+    feature_cards = [
+        (
+            "🤖",
+            "AI 도우미",
+            CHAT_PROVIDER_LABEL,
+            "재고, 시세, 판매 판단을 질문으로 확인합니다.",
+            "AI 도우미",
+        ),
+        (
+            "📝",
+            "판매상품등록",
+            f"{total_available_kg:,}kg",
+            "쇼핑몰에 추가 등록 가능한 재고를 상품으로 올립니다.",
+            "판매상품등록",
+        ),
+        (
+            "🍎",
+            "판매중인상품",
+            f"{len(active_listings)}개",
+            f"현재 쇼핑몰 등록량 {total_listed_kg:,}kg을 확인합니다.",
+            "판매중인상품",
+        ),
+        (
+            "🔄",
+            "가격 정보 업데이트",
+            latest_date,
+            "시세 수집, 예측 문서 생성, RAG 반영을 실행합니다.",
+            "가격 정보 업데이트",
+        ),
+        (
+            "📰",
+            "최신 뉴스 업데이트",
+            latest_news_date,
+            "과일 뉴스를 수집하고 요약 문서로 반영합니다.",
+            "최신 뉴스 업데이트",
+        ),
+        (
+            "🔔",
+            "알림",
+            f"{len(orders)}건",
+            "주문 접수와 판매 등록 알림을 확인합니다.",
+            "알림",
+        ),
+    ]
+    for row_start in range(0, len(feature_cards), 3):
+        card_cols = st.columns(3)
+        for col, card in zip(card_cols, feature_cards[row_start : row_start + 3]):
+            with col:
+                render_feature_card(*card)
+
+    st.markdown('<div class="section-label">🍎 재고 요약</div>', unsafe_allow_html=True)
     inventory_cols = st.columns(3)
     for index, product in enumerate(products[:6]):
         with inventory_cols[index % 3]:
