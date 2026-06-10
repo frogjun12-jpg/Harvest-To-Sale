@@ -2,12 +2,15 @@ import os
 import re
 
 import ollama
-from dotenv import load_dotenv
 
-load_dotenv()
+from app.config import load_app_env
+
+load_app_env()
 
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 CHAT_MODEL = os.getenv("OLLAMA_CHAT_MODEL", "qwen2.5:7b")
+LLM_PROVIDER = os.getenv("LLM_PROVIDER", "ollama")
+OPENAI_CHAT_MODEL = os.getenv("OPENAI_CHAT_MODEL", "gpt-4o-mini")
 
 client = ollama.Client(host=OLLAMA_BASE_URL)
 
@@ -93,17 +96,79 @@ def build_messages(
     return messages
 
 
+def normalize_provider(provider: str | None = None) -> str:
+    selected = (provider or LLM_PROVIDER or "ollama").strip().lower()
+    return "openai" if selected in {"openai", "gpt", "pro"} else "ollama"
+
+
+def chat_with_ollama(
+    messages: list[dict[str, str]],
+    temperature: float,
+    max_tokens: int | None = None,
+) -> str:
+    options = {"temperature": temperature}
+    if max_tokens is not None:
+        options["num_predict"] = max_tokens
+    response = client.chat(
+        model=CHAT_MODEL,
+        messages=messages,
+        options=options,
+    )
+    return response["message"]["content"]
+
+
+def chat_with_openai(
+    messages: list[dict[str, str]],
+    temperature: float,
+    max_tokens: int | None = None,
+) -> str:
+    try:
+        from openai import OpenAI
+    except ImportError as exc:
+        raise RuntimeError("OpenAI API를 사용하려면 requirements.txt 설치 후 OPENAI_API_KEY를 설정해야 합니다.") from exc
+
+    openai_base_url = os.getenv("OPENAI_BASE_URL", "").strip()
+    if not openai_base_url:
+        os.environ.pop("OPENAI_BASE_URL", None)
+
+    client_options = {"api_key": os.getenv("OPENAI_API_KEY")}
+    if openai_base_url:
+        client_options["base_url"] = openai_base_url
+    openai_client = OpenAI(**client_options)
+    request = {
+        "model": OPENAI_CHAT_MODEL,
+        "messages": messages,
+        "temperature": temperature,
+    }
+    if max_tokens is not None:
+        request["max_tokens"] = max_tokens
+
+    response = openai_client.chat.completions.create(**request)
+    return response.choices[0].message.content or ""
+
+
+def chat_completion(
+    messages: list[dict[str, str]],
+    temperature: float,
+    provider: str | None = None,
+    max_tokens: int | None = None,
+) -> str:
+    if normalize_provider(provider) == "openai":
+        return chat_with_openai(messages, temperature, max_tokens)
+    return chat_with_ollama(messages, temperature, max_tokens)
+
+
 def generate_answer(
     prompt: str,
     history: list[dict[str, str]] | None = None,
     summary: str | None = None,
+    provider: str | None = None,
 ) -> str:
-    response = client.chat(
-        model=CHAT_MODEL,
-        messages=build_messages(prompt, history, summary),
-        options={"temperature": 0.2},
+    answer = chat_completion(
+        build_messages(prompt, history, summary),
+        temperature=0.2,
+        provider=provider,
     )
-    answer = response["message"]["content"]
     if not contains_disallowed_foreign_text(answer):
         return answer
 
@@ -119,9 +184,8 @@ AI, API, LLM, Streamlit 같은 짧고 자연스러운 기술 용어는 필요할
 {answer}
 """.strip()
 
-    rewrite_response = client.chat(
-        model=CHAT_MODEL,
-        messages=[
+    rewritten_answer = chat_completion(
+        [
             {
                 "role": "system",
                 "content": (
@@ -132,15 +196,19 @@ AI, API, LLM, Streamlit 같은 짧고 자연스러운 기술 용어는 필요할
             },
             {"role": "user", "content": rewrite_prompt},
         ],
-        options={"temperature": 0.1},
+        temperature=0.1,
+        provider=provider,
     )
-    rewritten_answer = rewrite_response["message"]["content"]
     if contains_disallowed_foreign_text(rewritten_answer):
         return "답변에 한국어가 아닌 표현이 섞여 다시 정리해야 합니다. 질문을 한 번만 더 보내주시면 한국어로만 답변드릴게요."
     return rewritten_answer
 
 
-def summarize_conversation(existing_summary: str, rows: list[dict]) -> str:
+def summarize_conversation(
+    existing_summary: str,
+    rows: list[dict],
+    provider: str | None = None,
+) -> str:
     conversation = "\n".join(
         f"{'사용자' if row['role'] == 'user' else '도우미'}: {row['content']}"
         for row in rows
@@ -161,15 +229,15 @@ def summarize_conversation(existing_summary: str, rows: list[dict]) -> str:
 # 갱신 요약
 """.strip()
 
-    response = client.chat(
-        model=CHAT_MODEL,
-        messages=[
+    return chat_completion(
+        [
             {
                 "role": "system",
                 "content": "당신은 대화 내용을 한국어로 짧고 정확하게 요약하는 도우미입니다.",
             },
             {"role": "user", "content": prompt},
         ],
-        options={"temperature": 0.1, "num_predict": 500},
+        temperature=0.1,
+        provider=provider,
+        max_tokens=500,
     )
-    return response["message"]["content"].strip()

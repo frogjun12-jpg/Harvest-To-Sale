@@ -21,6 +21,7 @@ class ChatRequest(BaseModel):
     question: str = Field(..., min_length=1)
     session_id: int | None = None
     user_id: str = "local_user"
+    llm_provider: str | None = None
 
 
 class SourceChunk(BaseModel):
@@ -119,6 +120,26 @@ def build_inventory_answer(question: str) -> str:
     return "\n".join(f"- {line}" for line in lines)
 
 
+def save_chat_turn(
+    session_id: int,
+    question: str,
+    answer: str,
+    summary: str | None,
+    llm_provider: str | None,
+) -> None:
+    add_message(session_id, "user", question)
+    add_message(session_id, "assistant", answer)
+    maybe_summarize_session(
+        session_id,
+        summary,
+        lambda existing_summary, rows: summarize_conversation(
+            existing_summary,
+            rows,
+            provider=llm_provider,
+        ),
+    )
+
+
 @router.post("/chat", response_model=ChatResponse)
 def chat(request: ChatRequest) -> ChatResponse:
     try:
@@ -135,24 +156,21 @@ def chat(request: ChatRequest) -> ChatResponse:
             )
         except ValueError as exc:
             answer = f"{exc} 재고보다 많은 수량은 쇼핑몰에 등록할 수 없습니다."
-            add_message(session_id, "user", request.question)
-            add_message(session_id, "assistant", answer)
+            save_chat_turn(session_id, request.question, answer, summary, request.llm_provider)
             return ChatResponse(session_id=session_id, answer=answer, sources=[])
 
         if listing:
             answer = (
                 f"{listing['product_name']} {listing['size_class']}과 {listing['grade']} 등급 {listing['quantity_kg']}kg을 "
                 f"내부 쇼핑몰에 등록했습니다. kg당 판매가는 {listing['price_per_kg']:,}원이고, "
-                f"판매 단위는 {listing['package_unit']}입니다. 등록상품과 알림 탭에서 확인할 수 있습니다."
+                f"판매 단위는 {listing['package_unit']}입니다. 판매중인상품과 알림 탭에서 확인할 수 있습니다."
             )
-            add_message(session_id, "user", request.question)
-            add_message(session_id, "assistant", answer)
+            save_chat_turn(session_id, request.question, answer, summary, request.llm_provider)
             return ChatResponse(session_id=session_id, answer=answer, sources=[])
 
         if is_inventory_question(request.question):
             answer = build_inventory_answer(request.question)
-            add_message(session_id, "user", request.question)
-            add_message(session_id, "assistant", answer)
+            save_chat_turn(session_id, request.question, answer, summary, request.llm_provider)
             return ChatResponse(
                 session_id=session_id,
                 answer=answer,
@@ -161,11 +179,14 @@ def chat(request: ChatRequest) -> ChatResponse:
 
         chunks = retrieve_context(request.question)
         prompt = build_prompt(request.question, chunks)
-        answer = generate_answer(prompt, history=history, summary=summary)
+        answer = generate_answer(
+            prompt,
+            history=history,
+            summary=summary,
+            provider=request.llm_provider,
+        )
 
-        add_message(session_id, "user", request.question)
-        add_message(session_id, "assistant", answer)
-        maybe_summarize_session(session_id, summary, summarize_conversation)
+        save_chat_turn(session_id, request.question, answer, summary, request.llm_provider)
 
         return ChatResponse(
             session_id=session_id,

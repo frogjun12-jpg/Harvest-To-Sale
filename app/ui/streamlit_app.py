@@ -1,21 +1,37 @@
+import base64
 import csv
 import html
 import os
+import re
 from pathlib import Path
 
 import requests
 import streamlit as st
-from dotenv import load_dotenv
 
-load_dotenv()
+from app.config import load_app_env
+
+load_app_env()
 
 CHAT_API_URL = os.getenv("CHAT_API_URL", "http://localhost:8000/chat")
 API_BASE_URL = CHAT_API_URL.rsplit("/", 1)[0]
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 PRICE_DATA_PATH = PROJECT_ROOT / "fruits_data" / "garak_apple_prices.csv"
 FORECAST_DOC_PATH = PROJECT_ROOT / "rag_docs" / "apple_price_forecast_chronos_mini.md"
+NEWS_DOC_PATH = PROJECT_ROOT / "rag_docs" / "fruit_news_2026.md"
+ASSET_DIR = Path(__file__).resolve().parent / "assets"
+ADMIN_PROMO_IMAGE_PATH = ASSET_DIR / "apple-market-banner.png"
+APP_EDITION = os.getenv("APP_EDITION", "free").strip().lower()
+IS_PRO_EDITION = APP_EDITION == "pro"
+ADMIN_PAGE_TITLE = os.getenv("ADMIN_PAGE_TITLE", "Manage Apple Pro" if IS_PRO_EDITION else "Manage Apple")
+ADMIN_LOGIN_DEFAULT_USERNAME = os.getenv(
+    "ADMIN_LOGIN_DEFAULT_USERNAME",
+    os.getenv("APP_ADMIN_PRO_USERNAME", "adminpro") if IS_PRO_EDITION else os.getenv("APP_ADMIN_USERNAME", "admin"),
+)
+ADMIN_REQUIRED_ROLE = os.getenv("ADMIN_REQUIRED_ROLE", "admin_pro" if IS_PRO_EDITION else "admin")
+CHAT_LLM_PROVIDER = os.getenv("CHAT_LLM_PROVIDER", "openai" if IS_PRO_EDITION else "ollama")
+CHAT_PROVIDER_LABEL = "GPT API" if CHAT_LLM_PROVIDER == "openai" else "Local Ollama"
 
-st.set_page_config(page_title="Manage Apple Admin", page_icon="apple", layout="wide")
+st.set_page_config(page_title=f"{ADMIN_PAGE_TITLE} Admin", page_icon="apple", layout="wide")
 
 st.markdown(
     """
@@ -77,6 +93,41 @@ st.markdown(
         background:#fffefa; border:1px solid rgba(23,35,29,.12); border-radius:8px;
         padding:.75rem; margin-top:1rem; color:#25342b; font-size:.84rem; line-height:1.7;
     }
+    .side-ad {
+        background: #fffefa;
+        border: 1px solid rgba(23,35,29,.13);
+        border-radius: 8px;
+        padding: .82rem;
+        box-shadow: 0 8px 20px rgba(23,35,29,.045);
+        margin-top: .8rem;
+    }
+    .side-ad-label {
+        color: #c9281f;
+        font-size: .76rem;
+        font-weight: 950;
+        margin-bottom: .25rem;
+    }
+    .side-ad-title {
+        color: #17231d;
+        font-size: 1rem;
+        line-height: 1.32;
+        font-weight: 950;
+        margin-bottom: .35rem;
+    }
+    .side-ad-copy {
+        color: #5e6961;
+        font-size: .84rem;
+        line-height: 1.45;
+        margin-bottom: .65rem;
+    }
+    .side-ad-image {
+        width: 100%;
+        height: 118px;
+        object-fit: cover;
+        border-radius: 8px;
+        border: 1px solid rgba(23,35,29,.08);
+        display: block;
+    }
     .timeline-item {
         border-left: 3px solid #16713a;
         padding: .25rem 0 .65rem .7rem;
@@ -133,6 +184,13 @@ def api_put(path: str, payload: dict):
     return response.json()
 
 
+def image_data_uri(path: Path) -> str:
+    if not path.exists():
+        return ""
+    encoded = base64.b64encode(path.read_bytes()).decode("ascii")
+    return f"data:image/png;base64,{encoded}"
+
+
 def format_won(value: int) -> str:
     return f"{int(value):,}원"
 
@@ -175,6 +233,151 @@ def render_product_card(product: dict) -> None:
     )
 
 
+def render_recent_orders(orders: list[dict], limit: int = 4) -> None:
+    st.markdown('<div class="section-label">최근 주문 알림</div>', unsafe_allow_html=True)
+    recent_orders = orders[:limit]
+    if recent_orders:
+        for order in recent_orders:
+            with st.container(border=True):
+                st.caption(order["created_at"])
+                st.write(
+                    f"주문 #{int(order['id']):04d} · "
+                    f"{int(order['quantity_kg']):,}kg · "
+                    f"{format_won(order['total_amount'])}"
+                )
+    else:
+        st.markdown('<div class="info-card quiet">아직 주문 데이터가 없습니다.</div>', unsafe_allow_html=True)
+
+
+def submit_chat_question(question: str) -> None:
+    spinner_text = (
+        "GPT API가 답변을 생성하는 중입니다..."
+        if IS_PRO_EDITION
+        else "로컬 LLM이 답변을 생성하는 중입니다..."
+    )
+    with st.spinner(spinner_text):
+        try:
+            response = requests.post(
+                CHAT_API_URL,
+                json={
+                    "question": question,
+                    "session_id": st.session_state.session_id,
+                    "llm_provider": CHAT_LLM_PROVIDER,
+                },
+                timeout=120,
+            )
+            response.raise_for_status()
+            data = response.json()
+        except requests.RequestException as exc:
+            st.error(f"API 호출 실패: {exc}")
+        else:
+            st.session_state.session_id = data["session_id"]
+            st.session_state.chat_history.append(
+                {"user": question, "assistant": data["answer"]}
+            )
+            st.session_state.chat_history = st.session_state.chat_history[-20:]
+            st.session_state.last_answer = data["answer"]
+            st.session_state.last_sources = data.get("sources", [])
+
+
+def render_chat_thread() -> None:
+    if not st.session_state.chat_history:
+        st.markdown(
+            '<div class="info-card quiet">아직 대화가 없습니다. 추천 질문을 누르거나 직접 질문을 입력해보세요.</div>',
+            unsafe_allow_html=True,
+        )
+        return
+
+    with st.container(height=420):
+        for turn in st.session_state.chat_history:
+            with st.chat_message("user"):
+                st.write(turn["user"])
+            with st.chat_message("assistant"):
+                st.write(turn["assistant"])
+
+
+def render_ai_assistant(show_sources: bool = True) -> None:
+    st.markdown('<div class="section-label">AI 도우미</div>', unsafe_allow_html=True)
+    render_chat_thread()
+
+    example_questions = [
+        "중과 하 재고 알려줘",
+        "대과 상 50키로 쇼핑몰에 올려줘",
+        "1달 내에 가장 팔기 좋은 날이 언제야?",
+    ]
+    example_cols = st.columns(3)
+    for col, example in zip(example_cols, example_questions):
+        if col.button(example, use_container_width=True):
+            st.session_state.question = example
+            submit_chat_question(example)
+            st.rerun()
+
+    question = st.text_area(
+        "AI 도우미 질문",
+        placeholder="예: 중과 하 재고 알려줘",
+        height=118,
+        key="question",
+        label_visibility="collapsed",
+    )
+    if st.button("질문하기", type="primary", disabled=not question.strip()):
+        submit_chat_question(question)
+        st.rerun()
+
+    if show_sources and st.session_state.last_sources:
+        with st.expander("검색된 문서 chunk"):
+            for source in st.session_state.last_sources:
+                st.markdown(
+                    f"**{source['source_path']} / chunk {source['chunk_index']}** "
+                    f"(distance: {source['distance']:.4f})"
+                )
+                st.write(source["content"])
+
+
+def read_news_summaries(limit: int = 5) -> list[dict[str, str]]:
+    if not NEWS_DOC_PATH.exists():
+        return []
+
+    try:
+        lines = NEWS_DOC_PATH.read_text(encoding="utf-8").splitlines()
+    except Exception:
+        return []
+
+    articles: list[dict[str, str]] = []
+    current: dict[str, str] | None = None
+    for line in lines:
+        title_match = re.match(r"^\d+\. (.+)", line)
+        if title_match:
+            if current:
+                articles.append(current)
+            current = {"title": title_match.group(1).strip(), "summary": ""}
+            continue
+        if current and line.strip().startswith("- 요약:"):
+            current["summary"] = line.split(":", 1)[1].strip()
+
+    if current:
+        articles.append(current)
+    return articles[:limit]
+
+
+def render_news_summary(limit: int = 5) -> None:
+    st.markdown('<div class="section-label">최신 뉴스 요약</div>', unsafe_allow_html=True)
+    articles = read_news_summaries(limit)
+    if not articles:
+        st.markdown('<div class="info-card quiet">아직 표시할 뉴스 요약이 없습니다.</div>', unsafe_allow_html=True)
+        return
+
+    for article in articles:
+        st.markdown(
+            f"""
+            <div class="answer-box">
+              <strong>{html.escape(article['title'])}</strong><br>
+              <span class="quiet">{html.escape(article['summary'])}</span>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+
 def latest_price_info() -> tuple[str, str]:
     if not PRICE_DATA_PATH.exists():
         return "없음", "시세 CSV 없음"
@@ -192,49 +395,90 @@ def latest_price_info() -> tuple[str, str]:
     return latest_date, doc_status
 
 
+def latest_news_info() -> tuple[str, str]:
+    if not NEWS_DOC_PATH.exists():
+        return "없음", "뉴스 문서 없음"
+
+    try:
+        content = NEWS_DOC_PATH.read_text(encoding="utf-8")
+    except Exception:
+        return "확인 실패", "뉴스 문서 읽기 실패"
+
+    generated_at = "확인 필요"
+    for line in content.splitlines():
+        if line.startswith("업데이트 시각:"):
+            generated_at = line.replace("업데이트 시각:", "", 1).strip()
+            break
+        if line.startswith("갱신 시각:"):
+            generated_at = line.replace("갱신 시각:", "", 1).strip()
+            break
+
+    article_count = sum(1 for line in content.splitlines() if re.match(r"^\d+\. ", line))
+    return generated_at, f"요약 기사 {article_count}개"
+
+
 @st.fragment(run_every="5s")
-def render_live_notification_sidebar() -> None:
-    st.markdown("### 실시간 알림")
+def render_notification_toasts() -> None:
     try:
         notifications = api_get("/sales/notifications")
     except requests.RequestException:
-        st.error("알림 연결 대기 중")
         return
 
-    unread = [notification for notification in notifications if not notification["is_read"]]
-    st.caption(f"새 알림 {len(unread)}개")
     if not st.session_state.toast_notifications_ready:
         st.session_state.last_toasted_notification_id = max(
             [int(notification["id"]) for notification in notifications],
             default=0,
         )
         st.session_state.toast_notifications_ready = True
+        return
 
     toastable_notifications = [
         notification
         for notification in notifications
         if (
             not notification["is_read"]
-            and notification["event_type"] == "order_created"
+            and notification["event_type"] in {"order_created", "listing_registered"}
             and int(notification["id"]) > int(st.session_state.last_toasted_notification_id)
         )
     ]
     for notification in reversed(toastable_notifications):
         st.toast(f"{notification['title']}\n\n{notification['message']}")
-        st.session_state.last_toasted_notification_id = max(
-            int(st.session_state.last_toasted_notification_id),
-            int(notification["id"]),
-        )
 
-    for notification in notifications[:4]:
-        marker = "●" if not notification["is_read"] else "○"
-        st.markdown(
-            f"**{marker} {html.escape(notification['title'])}**  \n"
-            f"{html.escape(notification['message'])}"
-        )
+    latest_notification_id = max(
+        [int(notification["id"]) for notification in notifications],
+        default=int(st.session_state.last_toasted_notification_id),
+    )
+    st.session_state.last_toasted_notification_id = max(
+        int(st.session_state.last_toasted_notification_id),
+        latest_notification_id,
+    )
 
 
-@st.fragment(run_every="5s")
+def render_free_sidebar_ad() -> None:
+    if IS_PRO_EDITION:
+        return
+
+    image_uri = image_data_uri(ADMIN_PROMO_IMAGE_PATH)
+    image_html = (
+        f'<img class="side-ad-image" src="{image_uri}" alt="Apple Market">'
+        if image_uri
+        else ""
+    )
+    st.markdown(
+        f"""
+        <div class="side-ad">
+          <div class="side-ad-label">APPLE MARKET</div>
+          <div class="side-ad-title">오늘 수확한 사과를 바로 판매하세요</div>
+          <div class="side-ad-copy">
+            AI가 추천한 판매 문구와 재고 기준으로 상품 등록까지 이어집니다.
+          </div>
+          {image_html}
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
 def render_notifications_panel() -> None:
     try:
         notifications = api_get("/sales/notifications")
@@ -277,6 +521,16 @@ if "toast_notifications_ready" not in st.session_state:
     st.session_state.toast_notifications_ready = False
 if "admin_page" not in st.session_state:
     st.session_state.admin_page = "대시보드"
+legacy_pages = {
+    "챗봇": "AI 도우미",
+    "판매등록": "판매상품등록",
+    "등록상품": "판매중인상품",
+    "쇼핑몰 재고": "판매중인상품",
+    "시세갱신": "가격 정보 업데이트",
+    "뉴스갱신": "최신 뉴스 업데이트",
+}
+if st.session_state.admin_page in legacy_pages:
+    st.session_state.admin_page = legacy_pages[st.session_state.admin_page]
 
 
 def set_session_value(key: str, value: str) -> None:
@@ -287,10 +541,10 @@ def require_login() -> dict:
     if "admin_user" in st.session_state:
         return st.session_state.admin_user
 
-    st.markdown('<div class="title">Manage Apple</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="title">{html.escape(ADMIN_PAGE_TITLE)}</div>', unsafe_allow_html=True)
     st.markdown('<div class="subtitle">관리자 계정으로 로그인하세요.</div>', unsafe_allow_html=True)
     with st.form("admin_login_form"):
-        username = st.text_input("아이디", value=os.getenv("APP_ADMIN_USERNAME", "admin"))
+        username = st.text_input("아이디", value=ADMIN_LOGIN_DEFAULT_USERNAME)
         password = st.text_input("비밀번호", type="password")
         submitted = st.form_submit_button("로그인", type="primary", use_container_width=True)
 
@@ -300,8 +554,8 @@ def require_login() -> dict:
         except requests.RequestException:
             st.error("로그인 실패: 아이디와 비밀번호를 확인하세요.")
         else:
-            if user["role"] != "admin":
-                st.error("관리자 계정만 접근할 수 있습니다.")
+            if user["role"] != ADMIN_REQUIRED_ROLE:
+                st.error("이 페이지에 접근할 수 있는 관리자 계정이 아닙니다.")
             else:
                 st.session_state.admin_user = user
                 st.rerun()
@@ -311,28 +565,33 @@ def require_login() -> dict:
 
 admin_user = require_login()
 
+render_notification_toasts()
+
 
 with st.sidebar:
     st.markdown(
         """
         <div class="side-brand">
-          <div class="side-logo">Manage Apple</div>
-          <div class="side-sub">AI 과일 자동화 시스템</div>
+          <div class="side-logo">{title}</div>
+          <div class="side-sub">{edition}</div>
         </div>
-        """,
+        """.format(
+            title=html.escape(ADMIN_PAGE_TITLE),
+            edition="GPT API Pro 시스템" if IS_PRO_EDITION else "AI 과일 자동화 시스템",
+        ),
         unsafe_allow_html=True,
     )
-    st.caption(f"{admin_user['display_name']}님 로그인")
+    st.caption(f"{admin_user['display_name']}님 로그인 · {CHAT_PROVIDER_LABEL}")
     if st.button("로그아웃", use_container_width=True):
         st.session_state.pop("admin_user", None)
         st.rerun()
     nav_items = [
         ("대시보드", "▣  대시보드"),
-        ("챗봇", "◌  챗봇"),
-        ("판매등록", "□  판매등록"),
-        ("쇼핑몰 재고", "▤  쇼핑몰 재고"),
-        ("등록상품", "▥  등록상품"),
-        ("시세갱신", "↻  시세갱신"),
+        ("판매상품등록", "□  판매상품등록"),
+        ("판매중인상품", "▥  판매중인상품"),
+        ("AI 도우미", "◌  AI 도우미"),
+        ("가격 정보 업데이트", "↻  가격 정보 업데이트"),
+        ("최신 뉴스 업데이트", "↻  최신 뉴스 업데이트"),
         ("알림", "!  알림"),
     ]
     for page_name, label in nav_items:
@@ -343,7 +602,6 @@ with st.sidebar:
             use_container_width=True,
         ):
             st.session_state.admin_page = page_name
-            st.rerun()
     selected_page = st.session_state.admin_page
     st.markdown(
         """
@@ -351,23 +609,38 @@ with st.sidebar:
           <strong>시스템 상태</strong><br>
           FastAPI 정상<br>
           MariaDB 정상<br>
-          Ollama Qwen 정상<br>
-          bge-m3 임베딩 정상<br>
+          {llm_status}<br>
+          {embedding_status}<br>
           Chronos 시세예측 정상
         </div>
-        """,
+        """.format(
+            llm_status="GPT API 정상" if IS_PRO_EDITION else "Ollama Qwen 정상",
+            embedding_status="OpenAI 임베딩 정상" if IS_PRO_EDITION else "bge-m3 임베딩 정상",
+        ),
         unsafe_allow_html=True,
     )
-    render_live_notification_sidebar()
+    render_free_sidebar_ad()
 
 st.markdown(
     """
     <div class="hero">
-      <div class="kicker">LOCAL LLM · ROBOT HARVEST · SALES OPS</div>
-      <div class="title">Manage Apple</div>
-      <div class="subtitle">로봇 수확 이벤트, 사과 재고, 쇼핑몰 등록, 주문 알림, 시세예측 RAG 갱신을 한 화면에서 관리합니다.</div>
+      <div class="kicker">{kicker}</div>
+      <div class="title">{title}</div>
+      <div class="subtitle">{subtitle}</div>
     </div>
-    """,
+    """.format(
+        kicker=(
+            "GPT API · CLOUD BACKEND · SALES OPS"
+            if IS_PRO_EDITION
+            else "LOCAL LLM · ROBOT HARVEST · SALES OPS"
+        ),
+        title=html.escape(ADMIN_PAGE_TITLE),
+        subtitle=(
+            "GPT API 기반으로 사과 재고, 쇼핑몰 등록, 주문 알림, 시세예측 RAG 반영을 관리합니다."
+            if IS_PRO_EDITION
+            else "로봇 수확 이벤트, 사과 재고, 쇼핑몰 등록, 주문 알림, 시세예측 RAG 반영을 한 화면에서 관리합니다."
+        ),
+    ),
     unsafe_allow_html=True,
 )
 
@@ -388,208 +661,45 @@ except requests.RequestException:
     orders = []
 
 active_listings = [listing for listing in listings if listing["status"] == "active"]
-total_base_stock = sum(int(product["base_available_kg"]) for product in products)
-total_listed_stock = sum(int(product["listed_kg"]) for product in products)
-total_available_stock = sum(int(product["available_kg"]) for product in products)
 latest_date, doc_status = latest_price_info()
-
-metric_cols = st.columns(4)
-with metric_cols[0]:
-    render_metric("총 기준 재고", f"{total_base_stock:,}kg", "대과/중과 더미 기준")
-with metric_cols[1]:
-    render_metric("쇼핑몰 등록 재고", f"{total_listed_stock:,}kg", f"활성 상품 {len(active_listings)}개", "blue")
-with metric_cols[2]:
-    render_metric("추가 등록 가능", f"{total_available_stock:,}kg", "등록 가능한 잔여 재고", "warn")
-with metric_cols[3]:
-    render_metric("최근 주문", f"{len(orders):,}건", f"최신 시세 {latest_date}", "red")
+latest_news_date, news_doc_status = latest_news_info()
 
 if selected_page == "대시보드":
-    dash_left, dash_right = st.columns([1.35, 1])
-    with dash_left:
-        st.markdown('<div class="section-label">챗봇</div>', unsafe_allow_html=True)
-        dashboard_question = st.text_input(
-            "대시보드 질문",
-            placeholder="예: 중과 하 재고 알려줘",
-            label_visibility="collapsed",
-            key="dashboard_question",
-        )
-        dash_btn_a, dash_btn_b, dash_btn_c = st.columns([1, 1, 1])
-        if dash_btn_a.button("질문하기", type="primary", disabled=not dashboard_question.strip(), use_container_width=True):
-            with st.spinner("답변을 생성하는 중입니다..."):
-                try:
-                    response = requests.post(
-                        CHAT_API_URL,
-                        json={
-                            "question": dashboard_question,
-                            "session_id": st.session_state.session_id,
-                        },
-                        timeout=120,
-                    )
-                    response.raise_for_status()
-                    data = response.json()
-                except requests.RequestException as exc:
-                    st.error(f"API 호출 실패: {exc}")
-                else:
-                    st.session_state.session_id = data["session_id"]
-                    st.session_state.chat_history.append(
-                        {"user": dashboard_question, "assistant": data["answer"]}
-                    )
-                    st.session_state.chat_history = st.session_state.chat_history[-3:]
-                    st.session_state.last_answer = data["answer"]
-                    st.session_state.last_sources = data.get("sources", [])
-        dash_btn_b.button(
-            "중과 하 재고",
-            use_container_width=True,
-            on_click=set_session_value,
-            args=("dashboard_question", "중과 하 재고 알려줘"),
-        )
-        dash_btn_c.button(
-            "시세 전망",
-            use_container_width=True,
-            on_click=set_session_value,
-            args=("dashboard_question", "1달 내에 가장 팔기 좋은 날이 언제야?"),
-        )
-
-        if st.session_state.last_answer:
-            safe_answer = html.escape(st.session_state.last_answer).replace("\n", "<br>")
-            st.markdown('<div class="section-label">최신 답변</div>', unsafe_allow_html=True)
-            st.markdown(f'<div class="answer-box">{safe_answer}</div>', unsafe_allow_html=True)
-
-        st.markdown('<div class="section-label">재고현황 요약</div>', unsafe_allow_html=True)
-        summary_cols = st.columns(2)
-        for index, product in enumerate(products[:6]):
-            with summary_cols[index % 2]:
-                render_product_card(product)
-
-    with dash_right:
-        st.markdown('<div class="section-label">최근 주문 알림</div>', unsafe_allow_html=True)
-        if orders:
-            st.markdown('<div class="timeline-card">', unsafe_allow_html=True)
-            for order in orders[:6]:
-                st.markdown(
-                    f"""
-                    <div class="timeline-item">
-                      <div class="timeline-time">{html.escape(order['created_at'])}</div>
-                      주문 #{int(order['id']):04d} · {int(order['quantity_kg']):,}kg · {format_won(order['total_amount'])}
-                    </div>
-                    """,
-                    unsafe_allow_html=True,
-                )
-            st.markdown("</div>", unsafe_allow_html=True)
-        else:
-            st.markdown('<div class="info-card quiet">아직 주문 데이터가 없습니다.</div>', unsafe_allow_html=True)
-
-        st.markdown('<div class="section-label">쇼핑몰 노출 재고</div>', unsafe_allow_html=True)
-        for listing in active_listings[:4]:
-            st.markdown(
-                f"""
-                <div class="answer-box">
-                <strong>{html.escape(item_name(listing))}</strong><br>
-                남은 판매수량 {int(listing['quantity_kg']):,}kg · {format_won(listing['price_per_kg'])}/kg
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-
-if selected_page == "챗봇":
-    left, right = st.columns([1.45, 1])
-    with left:
-        st.markdown('<div class="section-label">질문</div>', unsafe_allow_html=True)
-        example_questions = [
-            "중과 하 재고 알려줘",
-            "대과 상 50키로 쇼핑몰에 올려줘",
-            "1달 내에 가장 팔기 좋은 날이 언제야?",
-        ]
-        example_cols = st.columns(3)
-        for col, example in zip(example_cols, example_questions):
-            if col.button(example, use_container_width=True):
-                st.session_state.question = example
-
-        question = st.text_area(
-            "질문",
-            placeholder="예: 중과 하 재고 알려줘",
-            height=118,
-            key="question",
-            label_visibility="collapsed",
-        )
-        if st.button("질문하기", type="primary", disabled=not question.strip()):
-            with st.spinner("로컬 LLM이 답변을 생성하는 중입니다..."):
-                try:
-                    response = requests.post(
-                        CHAT_API_URL,
-                        json={"question": question, "session_id": st.session_state.session_id},
-                        timeout=120,
-                    )
-                    response.raise_for_status()
-                    data = response.json()
-                except requests.RequestException as exc:
-                    st.error(f"API 호출 실패: {exc}")
-                else:
-                    st.session_state.session_id = data["session_id"]
-                    st.session_state.chat_history.append(
-                        {"user": question, "assistant": data["answer"]}
-                    )
-                    st.session_state.chat_history = st.session_state.chat_history[-3:]
-                    st.session_state.last_answer = data["answer"]
-                    st.session_state.last_sources = data.get("sources", [])
-
-        if st.session_state.last_answer:
-            safe_answer = html.escape(st.session_state.last_answer).replace("\n", "<br>")
-            st.markdown('<div class="section-label">최신 답변</div>', unsafe_allow_html=True)
-            st.markdown(f'<div class="answer-box">{safe_answer}</div>', unsafe_allow_html=True)
-            with st.expander("검색된 문서 chunk"):
-                for source in st.session_state.last_sources:
-                    st.markdown(
-                        f"**{source['source_path']} / chunk {source['chunk_index']}** "
-                        f"(distance: {source['distance']:.4f})"
-                    )
-                    st.write(source["content"])
-
-    with right:
-        st.markdown('<div class="section-label">최근 대화</div>', unsafe_allow_html=True)
-        if st.session_state.chat_history:
-            for turn in reversed(st.session_state.chat_history[-3:]):
-                st.chat_message("user").write(turn["user"])
-                st.chat_message("assistant").write(turn["assistant"])
-        else:
-            st.markdown('<div class="info-card quiet">아직 대화가 없습니다. 왼쪽에서 질문을 입력해보세요.</div>', unsafe_allow_html=True)
-
-        if st.session_state.session_id:
-            st.caption(f"대화 세션 #{st.session_state.session_id}")
-
-        st.markdown('<div class="section-label">최근 주문 알림</div>', unsafe_allow_html=True)
-        recent_orders = orders[:4]
-        if recent_orders:
-            st.markdown('<div class="timeline-card">', unsafe_allow_html=True)
-            for order in recent_orders:
-                st.markdown(
-                    f"""
-                    <div class="timeline-item">
-                      <div class="timeline-time">{html.escape(order['created_at'])}</div>
-                      주문 #{int(order['id']):04d} · {int(order['quantity_kg']):,}kg · {format_won(order['total_amount'])}
-                    </div>
-                    """,
-                    unsafe_allow_html=True,
-                )
-            st.markdown("</div>", unsafe_allow_html=True)
-        else:
-            st.markdown('<div class="info-card quiet">아직 주문 데이터가 없습니다.</div>', unsafe_allow_html=True)
-
-if selected_page == "판매등록":
-    st.markdown('<div class="section-label">판매등록 워크플로우</div>', unsafe_allow_html=True)
-    if products:
-        setup_col, draft_col = st.columns([1, 1])
-        with setup_col:
-            labels = [
-                f"{item_name(item)} · 추가 가능 {int(item['available_kg']):,}kg · {format_won(item['recommended_price_per_kg'])}/kg"
-                for item in products
-            ]
-            selected_label = st.selectbox("재고 선택", labels)
-            product = products[labels.index(selected_label)]
+    st.markdown('<div class="section-label">크기·품질별 사과 재고</div>', unsafe_allow_html=True)
+    inventory_cols = st.columns(3)
+    for index, product in enumerate(products[:6]):
+        with inventory_cols[index % 3]:
             render_product_card(product)
 
-            max_quantity = max(int(product["available_kg"]), 1)
-            default_quantity = min(max_quantity, 100)
+    assistant_col, side_col = st.columns([1.35, 1])
+    with assistant_col:
+        render_ai_assistant(show_sources=False)
+    with side_col:
+        render_recent_orders(orders)
+        render_news_summary(limit=5)
+
+if selected_page == "AI 도우미":
+    left, right = st.columns([1.45, 1])
+    with left:
+        render_ai_assistant(show_sources=True)
+
+    with right:
+        render_recent_orders(orders)
+
+if selected_page == "판매상품등록":
+    st.markdown('<div class="section-label">판매상품등록</div>', unsafe_allow_html=True)
+    if products:
+        labels = [
+            f"{item_name(item)} · 추가 가능 {int(item['available_kg']):,}kg · {format_won(item['recommended_price_per_kg'])}/kg"
+            for item in products
+        ]
+        selected_label = st.selectbox("재고 선택", labels)
+        product = products[labels.index(selected_label)]
+        max_quantity = max(int(product["available_kg"]), 1)
+        default_quantity = min(max_quantity, 100)
+
+        form_col, preview_col = st.columns([1.2, 1])
+        with form_col:
             quantity_kg = st.number_input(
                 "판매 수량(kg)",
                 min_value=1,
@@ -605,104 +715,52 @@ if selected_page == "판매등록":
             )
             package_unit = st.text_input("판매 단위", value=product["package_unit"])
             sales_channel = st.text_input("판매 채널", value=product["sales_channel"])
-            description = st.text_area(
-                "상품 설명",
-                value=(
-                    f"{item_name(product)} 상품입니다. "
-                    f"{package_unit} 단위로 판매하며, 주문 확인 후 순차 출고합니다."
-                ),
-                height=96,
+            default_description = (
+                f"{item_name(product)}를 {package_unit} 단위로 판매합니다. "
+                f"선별 기준을 통과한 상품으로, 주문 확인 후 신선하게 출고합니다."
             )
-            payload = {
-                "product_name": product["product_name"],
-                "size_class": product["size_class"],
-                "grade": product["grade"],
-                "quantity_kg": int(quantity_kg),
-                "estimated_unit_weight_kg": float(product["estimated_unit_weight_kg"]),
-                "price_per_kg": int(price_per_kg),
-                "package_unit": package_unit,
-                "sales_channel": sales_channel,
-                "description": description,
-            }
-            if st.button("판매 초안 생성", type="primary", use_container_width=True):
-                try:
-                    draft = api_post("/sales/drafts", payload)
-                except requests.RequestException as exc:
-                    st.error(f"판매 초안 생성 실패: {exc}")
-                else:
-                    st.success(f"판매 초안 #{draft['id']}이 생성되었습니다.")
-                    st.rerun()
+            description = st.text_area("상품 설명", value=default_description, height=118)
 
-        with draft_col:
-            st.markdown('<div class="section-label">초안 승인·등록</div>', unsafe_allow_html=True)
+        with preview_col:
+            st.markdown(
+                f"""
+                <div class="product-card">
+                  <div class="product-title">{html.escape(item_name(product))}</div>
+                  <div class="product-meta">
+                    추가 등록 가능 <strong>{int(product['available_kg']):,}kg</strong><br>
+                    추천 판매가 <span class="price">{format_won(product['recommended_price_per_kg'])}/kg</span><br>
+                    등록 예정 수량 {int(quantity_kg):,}kg
+                  </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+        payload = {
+            "product_name": product["product_name"],
+            "size_class": product["size_class"],
+            "grade": product["grade"],
+            "quantity_kg": int(quantity_kg),
+            "estimated_unit_weight_kg": float(product["estimated_unit_weight_kg"]),
+            "price_per_kg": int(price_per_kg),
+            "package_unit": package_unit,
+            "sales_channel": sales_channel,
+            "description": description,
+        }
+        if st.button("상품등록", type="primary", use_container_width=True):
             try:
-                drafts = api_get("/sales/drafts")
+                draft = api_post("/sales/drafts", payload)
+                listing = api_post(f"/sales/drafts/{draft['id']}/register")
             except requests.RequestException as exc:
-                st.error(f"판매 초안을 불러오지 못했습니다: {exc}")
-                drafts = []
+                st.error(f"상품등록 실패: {exc}")
+            else:
+                st.success(f"{item_name(listing)} {int(listing['quantity_kg']):,}kg을 판매중인상품에 등록했습니다.")
+                st.rerun()
+    else:
+        st.info("등록 가능한 재고가 없습니다.")
 
-            if not drafts:
-                st.info("아직 판매 초안이 없습니다.")
-
-            for draft in drafts[:8]:
-                with st.expander(
-                    f"#{draft['id']} {draft['product_name']} {draft['size_class']}과 {draft['grade']} "
-                    f"{int(draft['quantity_kg']):,}kg · {draft['status']}"
-                ):
-                    edited_quantity = st.number_input(
-                        "수량(kg)",
-                        min_value=1,
-                        value=int(draft["quantity_kg"]),
-                        key=f"quantity_{draft['id']}",
-                    )
-                    edited_price = st.number_input(
-                        "kg당 판매가",
-                        min_value=1,
-                        value=int(draft["price_per_kg"]),
-                        key=f"price_{draft['id']}",
-                    )
-                    edited_description = st.text_area(
-                        "설명",
-                        value=draft["description"],
-                        key=f"description_{draft['id']}",
-                        height=76,
-                    )
-                    update_payload = {
-                        "product_name": draft["product_name"],
-                        "size_class": draft["size_class"],
-                        "grade": draft["grade"],
-                        "quantity_kg": int(edited_quantity),
-                        "estimated_unit_weight_kg": float(draft["estimated_unit_weight_kg"]),
-                        "price_per_kg": int(edited_price),
-                        "package_unit": draft["package_unit"],
-                        "sales_channel": draft["sales_channel"],
-                        "description": edited_description,
-                    }
-                    btn_a, btn_b, btn_c = st.columns(3)
-                    if btn_a.button("수정", key=f"save_{draft['id']}"):
-                        try:
-                            api_put(f"/sales/drafts/{draft['id']}", update_payload)
-                        except requests.RequestException as exc:
-                            st.error(f"수정 실패: {exc}")
-                        else:
-                            st.rerun()
-                    if btn_b.button("승인", key=f"approve_{draft['id']}", disabled=draft["status"] != "draft"):
-                        try:
-                            api_post(f"/sales/drafts/{draft['id']}/approve")
-                        except requests.RequestException as exc:
-                            st.error(f"승인 실패: {exc}")
-                        else:
-                            st.rerun()
-                    if btn_c.button("등록", key=f"register_{draft['id']}", disabled=draft["status"] not in {"draft", "approved"}):
-                        try:
-                            api_post(f"/sales/drafts/{draft['id']}/register")
-                        except requests.RequestException as exc:
-                            st.error(f"판매 등록 실패: {exc}")
-                        else:
-                            st.rerun()
-
-if selected_page == "쇼핑몰 재고":
-    st.markdown('<div class="section-label">쇼핑몰 노출 재고</div>', unsafe_allow_html=True)
+if selected_page == "판매중인상품":
+    st.markdown('<div class="section-label">판매중인상품</div>', unsafe_allow_html=True)
     if not active_listings:
         st.info("판매 등록된 상품이 아직 없습니다.")
     listing_cols = st.columns(3)
@@ -727,51 +785,61 @@ if selected_page == "쇼핑몰 재고":
                 unsafe_allow_html=True,
             )
 
-if selected_page == "등록상품":
-    st.markdown('<div class="section-label">등록상품 전체</div>', unsafe_allow_html=True)
-    if not listings:
-        st.info("아직 등록된 상품이 없습니다.")
-    for listing in listings:
-        total_amount = int(listing["quantity_kg"]) * int(listing["price_per_kg"])
-        st.markdown(
-            f"""
-            <div class="answer-box">
-            <strong>{html.escape(item_name(listing))}</strong><br>
-            수량 {int(listing['quantity_kg']):,}kg · 최초 {int(listing.get('original_quantity_kg', listing['quantity_kg'])):,}kg ·
-            kg당 {format_won(listing['price_per_kg'])}<br>
-            추정 단위중량 {float(listing['estimated_unit_weight_kg']):.2f}kg/개 · 채널 {html.escape(listing['sales_channel'])} · 상태 {listing['status']}<br>
-            예상 총액 {total_amount:,}원
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-if selected_page == "시세갱신":
-    st.markdown('<div class="section-label">시세 데이터 갱신</div>', unsafe_allow_html=True)
+if selected_page == "가격 정보 업데이트":
+    st.markdown('<div class="section-label">가격 정보 업데이트</div>', unsafe_allow_html=True)
     price_cols = st.columns(3)
     with price_cols[0]:
         render_metric("최신 관측일", latest_date, "가락시장 CSV 기준")
     with price_cols[1]:
         render_metric("예측 문서", doc_status, "Chronos mini RAG")
     with price_cols[2]:
-        render_metric("갱신 방식", "수동 실행", "크롤링·예측·재임베딩")
+        render_metric("업데이트 방식", "수동 실행", "크롤링·예측·재임베딩")
 
     st.markdown(
         """
         <div class="info-card quiet">
-        버튼을 누르면 가락시장 사과 시세를 수집하고 Chronos mini 예측 문서를 다시 생성한 뒤 MariaDB Vector에 재임베딩합니다.
+        버튼을 누르면 가락시장 사과 시세를 수집하고 Chronos mini 예측 문서를 다시 생성한 뒤 MariaDB Vector에 반영합니다.
         </div>
         """,
         unsafe_allow_html=True,
     )
-    if st.button("최신 시세 가져와서 RAG 갱신", type="primary"):
-        with st.spinner("시세 수집, 예측, RAG 재임베딩을 진행하는 중입니다..."):
+    if st.button("가격 정보 업데이트", type="primary"):
+        with st.spinner("시세 수집, 예측, RAG 반영을 진행하는 중입니다..."):
             try:
                 result = api_post("/prices/refresh", timeout=600)
             except requests.RequestException as exc:
-                st.error(f"시세 갱신 실패: {exc}")
+                st.error(f"가격 정보 업데이트 실패: {exc}")
             else:
-                st.success("시세 예측 RAG 문서를 갱신했습니다.")
+                st.success("시세 예측 RAG 문서를 업데이트했습니다.")
+                st.json(result)
+
+if selected_page == "최신 뉴스 업데이트":
+    st.markdown('<div class="section-label">최신 뉴스 업데이트</div>', unsafe_allow_html=True)
+    news_cols = st.columns(3)
+    with news_cols[0]:
+        render_metric("최근 뉴스 문서 업데이트", latest_news_date, "fruit_news_2026.md 기준")
+    with news_cols[1]:
+        render_metric("뉴스 요약 상태", news_doc_status, "원문 저장 없이 요약 저장")
+    with news_cols[2]:
+        render_metric("업데이트 방식", "수동 실행", "뉴스 수집·요약·재임베딩")
+
+    st.markdown(
+        """
+        <div class="info-card quiet">
+        버튼을 누르면 과일 시장 관련 뉴스를 RSS로 수집하고, 기사 원문 대신 가격·수급·판매 판단에 필요한 요약만 Markdown 문서로 저장한 뒤 MariaDB Vector에 반영합니다.
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    render_news_summary(limit=5)
+    if st.button("최신 뉴스 업데이트", type="primary"):
+        with st.spinner("뉴스 수집, 요약 문서 생성, RAG 반영을 진행하는 중입니다..."):
+            try:
+                result = api_post("/news/refresh", timeout=240)
+            except requests.RequestException as exc:
+                st.error(f"최신 뉴스 업데이트 실패: {exc}")
+            else:
+                st.success("과일 뉴스 요약 RAG 문서를 업데이트했습니다.")
                 st.json(result)
 
 if selected_page == "알림":

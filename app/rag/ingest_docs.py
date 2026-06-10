@@ -1,8 +1,7 @@
 import os
 from pathlib import Path
 
-from dotenv import load_dotenv
-
+from app.config import load_app_env
 from app.db.vector_search import (
     delete_chunks_except_sources,
     delete_document_chunks,
@@ -10,7 +9,7 @@ from app.db.vector_search import (
 )
 from app.rag.embedder import embed_text
 
-load_dotenv()
+load_app_env()
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 RAG_DOCS_DIR = PROJECT_ROOT / "rag_docs"

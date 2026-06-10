@@ -1,0 +1,97 @@
+name: fruits_local_llm_free
+
+services:
+  mariadb:
+    image: mariadb:11.8
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: ${MARIADB_DATABASE:-fruits_rag}
+      MARIADB_USER: ${MARIADB_USER:-rag_user}
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD:-rag_password}
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:-rag_root_password}
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mariadb-admin ping -h 127.0.0.1 -uroot -p$${MARIADB_ROOT_PASSWORD} --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: ../..
+      dockerfile: editions/free/Dockerfile
+    restart: unless-stopped
+    env_file:
+      - ../../.env
+    environment:
+      APP_ENV_FILE: .env
+      MARIADB_HOST: mariadb
+      CHAT_API_URL: http://api:8000/chat
+      LLM_PROVIDER: ollama
+      EMBEDDING_PROVIDER: ollama
+      OLLAMA_BASE_URL: http://host.docker.internal:11434
+      OLLAMA_CHAT_MODEL: qwen2.5:7b
+      OLLAMA_EMBEDDING_MODEL: bge-m3
+      RAG_EMBEDDING_DIM: "1024"
+      RAG_RECREATE_VECTOR_TABLE: "true"
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    command: >
+      sh -c "python -m app.db.init_schema &&
+             python -m app.rag.ingest_docs &&
+             python -m uvicorn app.main:app --host 0.0.0.0 --port 8000"
+
+  admin:
+    build:
+      context: ../..
+      dockerfile: editions/free/Dockerfile
+    restart: unless-stopped
+    env_file:
+      - ../../.env
+    environment:
+      APP_ENV_FILE: .env
+      APP_EDITION: free
+      CHAT_LLM_PROVIDER: ollama
+      CHAT_API_URL: http://api:8000/chat
+      MARIADB_HOST: mariadb
+      LLM_PROVIDER: ollama
+      EMBEDDING_PROVIDER: ollama
+      OLLAMA_BASE_URL: http://host.docker.internal:11434
+    depends_on:
+      - api
+    ports:
+      - "8501:8501"
+    command: >
+      python -m streamlit run app/ui/streamlit_app.py
+      --server.address 0.0.0.0
+      --server.port 8501
+      --server.headless true
+
+  shop:
+    build:
+      context: ../..
+      dockerfile: editions/free/Dockerfile
+    restart: unless-stopped
+    env_file:
+      - ../../.env
+    environment:
+      APP_ENV_FILE: .env
+      SHOP_EDITION: free
+      CHAT_API_URL: http://api:8000/chat
+      MARIADB_HOST: mariadb
+    depends_on:
+      - api
+    ports:
+      - "8502:8502"
+    command: >
+      python -m streamlit run app/ui/shop_app.py
+      --server.address 0.0.0.0
+      --server.port 8502
+      --server.headless true
+
+volumes:
+  mariadb_data:

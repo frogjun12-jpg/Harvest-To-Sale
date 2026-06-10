@@ -2,6 +2,7 @@ from fastapi import FastAPI
 
 from app.api.auth import router as auth_router
 from app.api.chat import router as chat_router
+from app.api.news import router as news_router
 from app.api.prices import router as prices_router
 from app.api.sales import router as sales_router
 
@@ -15,6 +16,7 @@ app.include_router(auth_router)
 app.include_router(chat_router)
 app.include_router(sales_router)
 app.include_router(prices_router)
+app.include_router(news_router)
 
 
 @app.get("/health")

@@ -1,6 +1,6 @@
 from app.db.connection import db_cursor
 
-SUMMARY_TRIGGER_TURNS = 6
+SUMMARY_TRIGGER_TURNS = 8
 RECENT_TURNS = 3
 
 

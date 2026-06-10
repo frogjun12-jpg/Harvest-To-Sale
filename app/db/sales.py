@@ -1,11 +1,23 @@
 import re
+from pathlib import Path
 
 from app.db.connection import db_cursor
 
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+FORECAST_DOC_PATH = PROJECT_ROOT / "rag_docs" / "apple_price_forecast_chronos_mini.md"
 
 SIZE_WEIGHT_KG = {
     "대": 0.32,
     "중": 0.24,
+}
+SIZE_MARKET_GRADE = {
+    "대": "상",
+    "중": "중",
+}
+QUALITY_PRICE_MULTIPLIER = {
+    "상": 1.12,
+    "중": 1.00,
+    "하": 0.82,
 }
 
 
@@ -90,7 +102,7 @@ def normalize_size_class(size_class: str | None) -> str:
 def get_product_template(product_name: str, size_class: str, grade: str) -> dict:
     size_class = normalize_size_class(size_class)
     grade = normalize_quality_grade(grade)
-    return next(
+    product = next(
         item
         for item in SAMPLE_PRODUCTS
         if (
@@ -99,6 +111,96 @@ def get_product_template(product_name: str, size_class: str, grade: str) -> dict
             and item["grade"] == grade
         )
     )
+    return {
+        **product,
+        "recommended_price_per_kg": get_recommended_price_per_kg(
+            size_class,
+            grade,
+            fallback_price=int(product["recommended_price_per_kg"]),
+        ),
+    }
+
+
+def round_price(value: float) -> int:
+    return int(round(value / 100) * 100)
+
+
+def parse_price_int(value: str) -> int | None:
+    digits = re.sub(r"[^0-9]", "", value)
+    return int(digits) if digits else None
+
+
+def load_forecast_recommended_prices() -> dict[tuple[str, str], int]:
+    if not FORECAST_DOC_PATH.exists():
+        return {}
+
+    try:
+        lines = FORECAST_DOC_PATH.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return {}
+
+    prices: dict[tuple[str, str], int] = {}
+    in_price_table = False
+    for line in lines:
+        if line.startswith("## 판매 기준가 산정표"):
+            in_price_table = True
+            continue
+        if in_price_table and line.startswith("## "):
+            break
+        if not in_price_table or not line.startswith("|"):
+            continue
+        if line.startswith("|---") or "추천 판매가" in line:
+            continue
+
+        cells = [cell.strip() for cell in line.strip("|").split("|")]
+        if len(cells) < 6:
+            continue
+        size_class = cells[0].replace("과", "").strip()
+        grade = cells[1].strip()
+        price = parse_price_int(cells[5])
+        if size_class in SIZE_WEIGHT_KG and grade in QUALITY_PRICE_MULTIPLIER and price:
+            prices[(size_class, grade)] = price
+    return prices
+
+
+def get_latest_market_prices() -> dict[str, int]:
+    if not FORECAST_DOC_PATH.exists():
+        return {}
+
+    try:
+        content = FORECAST_DOC_PATH.read_text(encoding="utf-8")
+    except OSError:
+        return {}
+
+    prices: dict[str, int] = {}
+    for market_grade in SIZE_MARKET_GRADE.values():
+        pattern = rf"## 가락시장 {market_grade} 등급 예측.*?- 30영업일 중앙값 평균: ([\d,]+)원/kg"
+        match = re.search(pattern, content, flags=re.S)
+        if match:
+            prices[market_grade] = int(match.group(1).replace(",", ""))
+    return prices
+
+
+def get_recommended_price_per_kg(
+    size_class: str,
+    grade: str,
+    fallback_price: int,
+) -> int:
+    size_class = normalize_size_class(size_class)
+    grade = normalize_quality_grade(grade)
+
+    forecast_prices = load_forecast_recommended_prices()
+    forecast_price = forecast_prices.get((size_class, grade))
+    if forecast_price:
+        return forecast_price
+
+    market_grade = SIZE_MARKET_GRADE[size_class]
+    market_prices = get_latest_market_prices()
+    base_price = market_prices.get(market_grade)
+    if base_price:
+        return round_price(base_price * QUALITY_PRICE_MULTIPLIER[grade])
+
+    return fallback_price
 
 
 def get_listing_commitments() -> dict[tuple[str, str, str], dict[str, int]]:
@@ -206,6 +308,11 @@ def list_products() -> list[dict]:
                 "listed_kg": listed_kg,
                 "sold_kg": sold_kg,
                 "remaining_listing_kg": remaining_listing_kg,
+                "recommended_price_per_kg": get_recommended_price_per_kg(
+                    product["size_class"],
+                    product["grade"],
+                    fallback_price=int(product["recommended_price_per_kg"]),
+                ),
             }
         )
     return products
@@ -316,8 +423,8 @@ def create_draft(data: dict) -> dict:
 
     create_notification(
         "draft_created",
-        "판매 초안 생성",
-        f"{data['product_name']} {data['size_class']}과 {data['grade']} 등급 {data['quantity_kg']}kg 판매 초안이 생성되었습니다.",
+        "상품등록 준비",
+        f"{data['product_name']} {data['size_class']}과 {data['grade']} 등급 {data['quantity_kg']}kg 상품등록 정보가 준비되었습니다.",
     )
     return get_draft(draft_id)
 
@@ -383,8 +490,8 @@ def approve_draft(draft_id: int) -> dict:
     draft = get_draft(draft_id)
     create_notification(
         "draft_approved",
-        "판매 초안 승인",
-        f"{draft['product_name']} {draft['size_class']}과 {draft['grade']} 등급 판매 초안이 승인되었습니다. 최종 등록을 진행할 수 있습니다.",
+        "상품등록 확인",
+        f"{draft['product_name']} {draft['size_class']}과 {draft['grade']} 등급 상품등록 정보가 확인되었습니다.",
     )
     return draft
 

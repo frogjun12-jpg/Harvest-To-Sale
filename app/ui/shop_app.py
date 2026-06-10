@@ -5,9 +5,10 @@ from pathlib import Path
 
 import requests
 import streamlit as st
-from dotenv import load_dotenv
 
-load_dotenv()
+from app.config import load_app_env
+
+load_app_env()
 
 CHAT_API_URL = os.getenv("CHAT_API_URL", "http://localhost:8000/chat")
 API_BASE_URL = CHAT_API_URL.rsplit("/", 1)[0]
@@ -22,8 +23,16 @@ PRODUCT_IMAGE_PATHS = {
     ("중", "중"): ASSET_DIR / "apple-medium-standard.png",
     ("중", "하"): ASSET_DIR / "apple-medium-value.png",
 }
+SHOP_EDITION = os.getenv("SHOP_EDITION", "free").strip().lower()
+IS_PRO_SHOP = SHOP_EDITION == "pro"
+SHOP_PAGE_TITLE = os.getenv("SHOP_PAGE_TITLE", "Apple Market Pro" if IS_PRO_SHOP else "Apple Market")
+SHOP_LOGIN_DEFAULT_USERNAME = os.getenv(
+    "SHOP_LOGIN_DEFAULT_USERNAME",
+    os.getenv("APP_CUSTOMER_PRO_USERNAME", "customerpro") if IS_PRO_SHOP else os.getenv("APP_CUSTOMER_USERNAME", "customer"),
+)
+SHOP_REQUIRED_ROLE = os.getenv("SHOP_REQUIRED_ROLE", "customer_pro" if IS_PRO_SHOP else "")
 
-st.set_page_config(page_title="Apple Market", page_icon="apple", layout="wide")
+st.set_page_config(page_title=SHOP_PAGE_TITLE, page_icon="apple", layout="wide")
 
 st.markdown(
     """
@@ -45,36 +54,46 @@ st.markdown(
     .kicker { color: #657261; font-size: .82rem; font-weight: 850; }
     .title { color: #17231d; font-size: 2.35rem; line-height: 1.1; font-weight: 900; margin: .15rem 0 .35rem; }
     .subtitle { color: #5e6961; line-height: 1.55; max-width: 720px; }
-    .promo-banner, .product-card {
+    .product-card {
         background: #fffefa;
         border: 1px solid rgba(23,35,29,.13);
         border-radius: 8px;
         padding: 1rem;
         box-shadow: 0 8px 20px rgba(23,35,29,.045);
     }
-    .promo-banner {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 1rem;
-        margin: .2rem 0 1rem;
-        padding: 1rem 1.2rem;
-        background: linear-gradient(100deg, #fff8ed 0%, #eef7ea 100%);
+    .side-ad {
+        background: #fffefa;
+        border: 1px solid rgba(23,35,29,.13);
+        border-radius: 8px;
+        padding: .85rem;
+        box-shadow: 0 8px 20px rgba(23,35,29,.045);
+        margin-top: .7rem;
     }
-    .promo-title { color: #17231d; font-size: 1.34rem; font-weight: 950; margin-bottom: .2rem; }
-    .promo-copy { color: #5e6961; line-height: 1.5; font-size: .95rem; }
-    .promo-image {
-        flex: 0 0 auto;
-        width: 220px;
-        height: 110px;
+    .side-ad-label {
+        color: #c9281f;
+        font-size: .78rem;
+        font-weight: 950;
+        margin-bottom: .25rem;
+    }
+    .side-ad-title {
+        color: #17231d;
+        font-size: 1.05rem;
+        line-height: 1.3;
+        font-weight: 950;
+        margin-bottom: .35rem;
+    }
+    .side-ad-copy {
+        color: #5e6961;
+        font-size: .88rem;
+        line-height: 1.45;
+        margin-bottom: .65rem;
+    }
+    .side-ad-image {
+        width: 100%;
+        height: 132px;
         object-fit: cover;
         border-radius: 8px;
         border: 1px solid rgba(23,35,29,.08);
-        box-shadow: 0 8px 18px rgba(23,35,29,.08);
-    }
-    @media (max-width: 760px) {
-        .promo-banner { align-items: flex-start; flex-direction: column; }
-        .promo-image { width: 100%; height: 150px; }
     }
     .hero-image {
         width: 260px;
@@ -176,10 +195,10 @@ def require_login() -> dict:
     if "shop_user" in st.session_state:
         return st.session_state.shop_user
 
-    st.markdown('<div class="title">Apple Market</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="title">{html.escape(SHOP_PAGE_TITLE)}</div>', unsafe_allow_html=True)
     st.markdown('<div class="subtitle">주문하려면 먼저 로그인하세요.</div>', unsafe_allow_html=True)
     with st.form("shop_login_form"):
-        username = st.text_input("아이디", value=os.getenv("APP_CUSTOMER_USERNAME", "customer"))
+        username = st.text_input("아이디", value=SHOP_LOGIN_DEFAULT_USERNAME)
         password = st.text_input("비밀번호", type="password")
         submitted = st.form_submit_button("로그인", type="primary", use_container_width=True)
 
@@ -189,8 +208,11 @@ def require_login() -> dict:
         except requests.RequestException:
             st.error("로그인 실패: 아이디와 비밀번호를 확인하세요.")
         else:
-            st.session_state.shop_user = user
-            st.rerun()
+            if SHOP_REQUIRED_ROLE and user["role"] != SHOP_REQUIRED_ROLE:
+                st.error("이 판매페이지에 접근할 수 있는 고객 계정이 아닙니다.")
+            else:
+                st.session_state.shop_user = user
+                st.rerun()
 
     st.stop()
 
@@ -210,6 +232,24 @@ def image_data_uri(path: Path) -> str:
     return f"data:image/png;base64,{encoded}"
 
 
+def render_free_sidebar_ad() -> None:
+    if IS_PRO_SHOP:
+        return
+
+    promo_image = f'<img class="side-ad-image" src="{promo_banner_uri}" />' if promo_banner_uri else ""
+    st.sidebar.markdown(
+        f"""
+        <div class="side-ad">
+          <div class="side-ad-label">오늘의 추천</div>
+          <div class="side-ad-title">농장에서 바로 선별한 신선한 사과</div>
+          <div class="side-ad-copy">대과는 선물용으로, 중과는 매일 먹기 좋은 실속형으로 준비했습니다.</div>
+          {promo_image}
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
 apple_image_uri = image_data_uri(APPLE_IMAGE_PATH)
 promo_banner_uri = image_data_uri(PROMO_IMAGE_PATH)
 product_image_uris = {
@@ -218,19 +258,28 @@ product_image_uris = {
 }
 
 shop_user = require_login()
+render_free_sidebar_ad()
 
 hero_image = f'<img class="hero-image" src="{apple_image_uri}" />' if apple_image_uri else ""
 st.markdown(
-    f"""
+    """
     <div class="market-header">
       <div>
         <div class="kicker">FRESH LOCAL APPLES</div>
-        <div class="title">Apple Market</div>
-        <div class="subtitle">신선한 사과를 합리적인 가격에 만나보세요.</div>
+        <div class="title">{title}</div>
+        <div class="subtitle">{subtitle}</div>
       </div>
       {hero_image}
     </div>
-    """,
+    """.format(
+        title=html.escape(SHOP_PAGE_TITLE),
+        subtitle=(
+            "GPT API Pro 운영 환경의 판매 상품을 확인하고 주문할 수 있습니다."
+            if IS_PRO_SHOP
+            else "신선한 사과를 합리적인 가격에 만나보세요."
+        ),
+        hero_image=hero_image,
+    ),
     unsafe_allow_html=True,
 )
 user_cols = st.columns([5, 1])
@@ -299,20 +348,6 @@ except requests.RequestException as exc:
 
 if "shop_size_filter" not in st.session_state:
     st.session_state.shop_size_filter = "전체"
-
-promo_image = f'<img class="promo-image" src="{promo_banner_uri}" />' if promo_banner_uri else ""
-st.markdown(
-    f"""
-    <div class="promo-banner">
-      <div>
-        <div class="promo-title">오늘 수확한 신선한 사과를 바로 만나보세요</div>
-        <div class="promo-copy">대과는 선물용으로, 중과는 매일 먹기 좋은 실속형으로 준비했습니다.</div>
-      </div>
-      {promo_image}
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
 
 filter_cols = st.columns([0.66, 0.62, 0.62, 0.62, 3.3, 1], gap="small")
 with filter_cols[0]:

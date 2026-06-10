@@ -33,22 +33,32 @@ def _default_users() -> list[dict[str, str]]:
             "role": "admin",
         },
         {
+            "username": os.getenv("APP_ADMIN_PRO_USERNAME", "adminpro"),
+            "password": os.getenv("APP_ADMIN_PRO_PASSWORD", "adminpro1234"),
+            "display_name": os.getenv("APP_ADMIN_PRO_DISPLAY_NAME", "Pro 관리자"),
+            "role": "admin_pro",
+        },
+        {
             "username": os.getenv("APP_CUSTOMER_USERNAME", "customer"),
             "password": os.getenv("APP_CUSTOMER_PASSWORD", "customer1234"),
             "display_name": os.getenv("APP_CUSTOMER_DISPLAY_NAME", "테스트 고객"),
             "role": "customer",
+        },
+        {
+            "username": os.getenv("APP_CUSTOMER_PRO_USERNAME", "customerpro"),
+            "password": os.getenv("APP_CUSTOMER_PRO_PASSWORD", "customerpro1234"),
+            "display_name": os.getenv("APP_CUSTOMER_PRO_DISPLAY_NAME", "Pro 테스트 고객"),
+            "role": "customer_pro",
         },
     ]
 
 
 def ensure_default_users() -> None:
     with db_cursor() as cursor:
-        cursor.execute("SELECT COUNT(*) AS count FROM app_users")
-        count = int(cursor.fetchone()["count"])
-        if count > 0:
-            return
-
         for user in _default_users():
+            cursor.execute("SELECT id FROM app_users WHERE username = ?", (user["username"],))
+            if cursor.fetchone():
+                continue
             salt, password_hash = hash_password(user["password"])
             cursor.execute(
                 """

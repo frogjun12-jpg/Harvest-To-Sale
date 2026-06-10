@@ -1,0 +1,100 @@
+name: fruits_local_llm
+
+services:
+  mariadb:
+    image: mariadb:11.8
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: ${MARIADB_DATABASE:-fruits_rag_pro}
+      MARIADB_USER: ${MARIADB_USER:-pro_rag_user}
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD:-change-this-password}
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:-change-this-root-password}
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mariadb-admin ping -h 0.0.0.0 -uroot -p$${MARIADB_ROOT_PASSWORD} --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: ../..
+      dockerfile: editions/pro/Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env.pro
+    environment:
+      APP_ENV_FILE: .env.pro
+      MARIADB_HOST: mariadb
+      CHAT_API_URL: http://api:8000/chat
+      LLM_PROVIDER: openai
+      EMBEDDING_PROVIDER: openai
+      OPENAI_EMBEDDING_MODEL: text-embedding-3-small
+      RAG_EMBEDDING_DIM: "1536"
+      RAG_RECREATE_VECTOR_TABLE: "true"
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    command: >
+      sh -c "python -m app.db.init_schema &&
+             python -m app.rag.ingest_docs &&
+             python -m uvicorn app.main:app --host 0.0.0.0 --port 8000"
+
+  admin-pro:
+    build:
+      context: ../..
+      dockerfile: editions/pro/Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env.pro
+    environment:
+      APP_ENV_FILE: .env.pro
+      APP_EDITION: pro
+      ADMIN_PAGE_TITLE: Manage Apple Pro
+      ADMIN_LOGIN_DEFAULT_USERNAME: adminpro
+      ADMIN_REQUIRED_ROLE: admin_pro
+      CHAT_LLM_PROVIDER: openai
+      CHAT_API_URL: http://api:8000/chat
+      MARIADB_HOST: mariadb
+      EMBEDDING_PROVIDER: openai
+      RAG_EMBEDDING_DIM: "1536"
+    depends_on:
+      - api
+    ports:
+      - "8601:8601"
+    command: >
+      python -m streamlit run app/ui/streamlit_pro_app.py
+      --server.address 0.0.0.0
+      --server.port 8601
+      --server.headless true
+
+  shop-pro:
+    build:
+      context: ../..
+      dockerfile: editions/pro/Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env.pro
+    environment:
+      APP_ENV_FILE: .env.pro
+      SHOP_EDITION: pro
+      SHOP_PAGE_TITLE: Apple Market Pro
+      SHOP_LOGIN_DEFAULT_USERNAME: customerpro
+      SHOP_REQUIRED_ROLE: customer_pro
+      CHAT_API_URL: http://api:8000/chat
+      MARIADB_HOST: mariadb
+    depends_on:
+      - api
+    ports:
+      - "8602:8602"
+    command: >
+      python -m streamlit run app/ui/shop_pro_app.py
+      --server.address 0.0.0.0
+      --server.port 8602
+      --server.headless true
+
+volumes:
+  mariadb_data:

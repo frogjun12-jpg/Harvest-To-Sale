@@ -3,9 +3,10 @@ from contextlib import contextmanager
 from typing import Iterator
 
 import mariadb
-from dotenv import load_dotenv
 
-load_dotenv()
+from app.config import load_app_env
+
+load_app_env()
 
 
 def get_connection() -> mariadb.Connection:

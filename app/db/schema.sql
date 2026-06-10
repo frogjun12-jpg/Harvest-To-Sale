@@ -36,13 +36,16 @@ CREATE TABLE IF NOT EXISTS app_users (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     username VARCHAR(80) NOT NULL UNIQUE,
     display_name VARCHAR(120) NOT NULL,
-    role ENUM('admin', 'customer') NOT NULL DEFAULT 'customer',
+    role ENUM('admin', 'admin_pro', 'customer', 'customer_pro') NOT NULL DEFAULT 'customer',
     password_salt VARCHAR(64) NOT NULL,
     password_hash VARCHAR(128) NOT NULL,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
+
+ALTER TABLE app_users
+    MODIFY COLUMN role ENUM('admin', 'admin_pro', 'customer', 'customer_pro') NOT NULL DEFAULT 'customer';
 
 CREATE TABLE IF NOT EXISTS sales_drafts (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,

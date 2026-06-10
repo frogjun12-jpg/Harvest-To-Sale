@@ -8,7 +8,7 @@ router = APIRouter(prefix="/prices", tags=["prices"])
 @router.get("/refresh")
 def refresh_prices_info() -> dict:
     return {
-        "message": "이 주소는 가격 갱신 API입니다. 관리자 Streamlit 화면의 '최신 시세 가져와서 RAG 갱신' 버튼으로 실행하세요.",
+        "message": "이 주소는 가격 정보 업데이트 API입니다. 관리자 Streamlit 화면의 '가격 정보 업데이트' 버튼으로 실행하세요.",
         "method": "POST",
         "path": "/prices/refresh",
     }

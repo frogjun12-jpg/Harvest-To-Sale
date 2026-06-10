@@ -1,73 +1,162 @@
-# 2026 과일 시장 뉴스 요약
+# 과일 시장 뉴스 요약
 
-이 문서는 MVP RAG 테스트용 과일 뉴스 요약이다. 실제 운영에서는 기사 원문, aT/KREI 관측자료, 도매시장 가격 API, 수출입 데이터로 주기적으로 갱신한다.
+업데이트 시각: 2026-06-09 15:41
 
-## 뉴스 요약
+이 문서는 뉴스 원문을 그대로 저장하지 않고, 과일 가격·수급·판매 판단에 필요한 내용만 요약해 RAG에 사용한다.
 
-1. 2026년 한국 과일 시장은 기후 영향, 생산 기반 변화, 수출 확대가 동시에 나타나는 흐름이다. 딸기와 감귤은 겨울철 가격 상승 이슈가 컸고, 사과와 배는 품목별 수급 전망에 따라 가격 흐름이 달라졌다.
+## 시장 신호 요약
 
-2. 한국 딸기 가격은 2026년 초 공급 차질과 기후 영향으로 강세를 보였다. 2026년 2월 초 aT 기준 딸기 평균 소매가격은 전년 대비 상승한 것으로 보도됐다.
+- 가격 변동: 관련 언급 18건. 가격 질문에는 최근 시세와 함께 기사에서 언급된 가격 압력을 같이 본다.
+- 수급: 관련 언급 5건. 판매시기 판단에는 출하량과 공급 부족 또는 과잉 신호를 같이 본다.
+- 기후: 관련 언급 0건. 품질과 가격 변동성 판단에는 기후 리스크를 별도 변수로 본다.
+- 저장·유통: 관련 언급 2건. 보관 물량과 유통 흐름이 언급되면 단기 판매 판단에 반영한다.
+- 수출·소비: 관련 언급 4건. 수요 확대 뉴스는 가격 방어 가능성으로 보되 품목별 차이를 확인한다.
 
-3. 딸기와 감귤은 겨울 성수기임에도 가격이 높게 유지되면서 기존의 계절 할인 효과가 약해졌다는 분석이 나왔다. 기후 충격이 도매와 소매 가격에 바로 반영되는 구조가 주요 원인으로 지목됐다.
+## 기사 요약
 
-4. 2026년 1월에는 딸기와 감귤 가격이 생산 감소와 공급 차질로 상승했다. 딸기 출하량은 1월 중순 이후 안정 가능성이 언급됐지만, 초반 가격 부담은 컸다.
+1. 도매시장에서 마트까지, ‘비싸진’ 사과 유통 추적기
+   - 날짜: 2026-01-16
+   - 출처: 시사IN
+   - 요약: 도매시장에서 마트까지, ‘비싸진’ 사과 유통 추적기 시사IN.
+   - 수집 검색어: 사과 가격 과일 농산물
+   - 링크: https://news.google.com/rss/articles/CBMiakFVX3lxTE9UU1JRQjMtVGg1OXAySlFmS2tHZ2JwVjlCTUp1TW5DVnhLXy00dUtRbERPT0ZQYkdIeGdFRXQ4YXJxVEphMnNYd1loaFhGd0REWHNhOW5MQ2tKV0xoSVRDNlE3Z1hjcGs0RWc?oc=5
 
-5. 한국산 포도와 딸기는 신선 과일 수출의 핵심 품목으로 부상했다. 2025년 포도와 딸기 수출액이 모두 높은 수준을 기록했고, 신품종과 수출 통합조직이 성장 요인으로 꼽혔다.
+2. 명절 특수 끝난 과일, 가격 하락세
+   - 날짜: 2026-02-27
+   - 출처: 농수축산신문
+   - 요약: 명절 특수 끝난 과일, 가격 하락세 농수축산신문.
+   - 수집 검색어: 사과 가격 과일 농산물
+   - 링크: https://news.google.com/rss/articles/CBMibEFVX3lxTE84R3RGMDJfaGprbzVOUEZxSG5EalEwYjdWOG8xM204SVh0cVVCSFhiWDRVc0ZlQkszejh3eGRYdF9HMmxOU3ZLdnJOZkhCSmJQc3BJX0NudmZhVmp6b2FDQnE4czhjUXhJZXdBaw?oc=5
 
-6. 한국 정부는 포도, 딸기, 배 등 국산 육성 품종을 수출 전략 품목으로 확대하려는 정책을 추진하고 있다. 해외 소비자 선호와 기후 적응성을 고려한 품종 개발이 강조된다.
+3. '제철과일' 챙겨 먹으려다가···가을철 사과 가격에 '후덜덜'
+   - 날짜: 2025-10-14
+   - 출처: 한국경제
+   - 요약: '제철과일' 챙겨 먹으려다가···가을철 사과 가격에 '후덜덜' 한국경제.
+   - 수집 검색어: 사과 가격 과일 농산물
+   - 링크: https://news.google.com/rss/articles/CBMiWkFVX3lxTE91ZTZ5Y1lTSDlVbFctXzNTMDF3T3JHR3hYVkhMYTZJcTZ5MHFqYnZFdkxMS2d6SUVfQjhIQjV2ZG50THlwVV9wWnV6U0Q2OFlZd01TdDJVcEw4QdIBVEFVX3lxTFBNcWJkT2pGNjc2cnczQWg1RFZXOENmVmJkUHkxTnNqMHBKbUg4SDZiZWtqeWQxTU9kb3VrNXh5a2pTM2JHQll4THZZWHpEYmdvdjJxLQ?oc=5
 
-7. 국산 포도 수출은 샤인머스캣 중심 구조가 강하다. 향후에는 특정 품종 의존도를 낮추고, 시장별 선호에 맞춘 품종 다변화가 중요해질 수 있다.
+4. "양파·사과값 내렸다"…광주·전남 농산물 약세 뚜렷
+   - 날짜: 2026-05-07
+   - 출처: 남도일보
+   - 요약: "양파·사과값 내렸다"…광주·전남 농산물 약세 뚜렷 남도일보.
+   - 수집 검색어: 사과 가격 과일 농산물
+   - 링크: https://news.google.com/rss/articles/CBMibEFVX3lxTE01b3BkbHJOYUNjbE1VT0xmVEJ5c3h2M2s1OWtzUG1UWi02N3hUcS1Hbk5IZWljOEc4Si14Y1ViTXN1enp3X3p3M0VoNkxlWWNTS2k5bEJBLWlwbG0zMHBoQUZWUmFoUjd4VGxzRtIBcEFVX3lxTFA4bUl1YXlKSkNHM0hGaU43Q1NhYjZKd1l0YjkxN0kyZ05obXdwT1g4d2ZxS2hYdWQ0SzZ1RjlSRWprRXBDandXUnB6Nnh3QjRJQWdRS3lQNWMxY0Y4T0ZKeXE5OF9tT0pnOGJRbFExVk4?oc=5
 
-8. 2026년 1분기 K-Food+ 수출 동향에서는 신선 농산물 중 딸기, 포도, 배 수출 증가가 언급됐다. 특히 배 수출은 미국 시장, 포도는 대만 시장, 딸기는 동남아 시장에서 성장 흐름이 있었다.
+5. 금값돼 난리인데…무려 15000톤 풀린다는 '국민 과일' 정체
+   - 날짜: 2025-09-25
+   - 출처: 위키트리
+   - 요약: 금값돼 난리인데…무려 15000톤 풀린다는 '국민 과일' 정체 위키트리.
+   - 수집 검색어: 사과 가격 과일 농산물
+   - 링크: https://news.google.com/rss/articles/CBMiVkFVX3lxTE51RWJJbklXR1dyMG1UUFlyZ2JleHh1YUFkdnZCN2c1cEtnV3Y2VHk1NUk5cC1xOEZDcnN0M25sc18yOFlWU1Fva2M5ZkZ3ZzVBTjZSbmp3?oc=5
 
-9. 논산 딸기는 국내 겨울철 대표 과일 브랜드로 주목받고 있다. 조기 출하가 가능한 신품종과 스마트농업 기반이 수출 확대 가능성과 연결되고 있다.
+6. 사과 등 과일값, 가을장마에 가격 오름세 계속[물가 돋보기]
+   - 날짜: 2025-10-18
+   - 출처: 이투데이
+   - 요약: 사과 등 과일값, 가을장마에 가격 오름세 계속[물가 돋보기] 이투데이.
+   - 수집 검색어: 사과 가격 과일 농산물
+   - 링크: https://news.google.com/rss/articles/CBMiVEFVX3lxTFBKVzFYbms2eC1lVUpqVUlrYUpaa0IwV1dNck80WnBQVjJ1NFV6SGI4WWdWMTZKYnZrZUJvSGJ5M1JZcEd2bnE2SmFUZE1EUmkwbzlpYQ?oc=5
 
-10. 한국 딸기 산업은 수출 수요와 국내 디저트 수요가 함께 늘면서 고품질 물량 확보 경쟁이 강해졌다. 스마트팜 기술은 품질 균일화와 출하 안정성 측면에서 중요한 과제로 부상했다.
+7. 과일값 ‘뚝’…추석 차례상 비용 30만원 벽 깨졌다
+   - 날짜: 2025-09-15
+   - 출처: mstoday.co.kr
+   - 요약: 과일값 ‘뚝’…추석 차례상 비용 30만원 벽 깨졌다 mstoday.co.kr.
+   - 수집 검색어: 사과 가격 과일 농산물
+   - 링크: https://news.google.com/rss/articles/CBMia0FVX3lxTE0xX29IaWNUalAxRlVZUmNOeEtyQXg0cTdnMUhGYW04a1hPWkoxREF5cGFJUGttT0U5UDM2X3hqcklGRWJ3M0RRYUp2UmU5eHc1Tk85cHFMVjVXQ0hEQ2RSUmp1V052Z0NXeThn?oc=5
 
-11. 2026년 농업전망에서는 주요 과일 재배면적이 전반적으로 소폭 감소할 가능성이 제시됐다. 배, 감귤, 포도, 단감은 고령화와 노동력 부족으로 면적 감소 압력이 있다.
+8. [데스크 칼럼] 사과값 폭등, 농산물 수급 관리 실패의 민낯
+   - 날짜: 2025-08-20
+   - 출처: 월드투데이
+   - 요약: [데스크 칼럼] 사과값 폭등, 농산물 수급 관리 실패의 민낯 월드투데이.
+   - 수집 검색어: 사과 가격 과일 농산물
+   - 링크: https://news.google.com/rss/articles/CBMib0FVX3lxTE1WNnJuWWtMc2ljTFdnZThSbFNOY3hnaDZpMFpsOWlPV3IyNFJ2QUlMS2VGNFJDQVAyYkRWeEZiTjBMMUxpT2Z5cEVocUJxaFFTSWZmWm1tN3lKMTNIeTZaMDFNMEpJRG1DTVY5QW4xNA?oc=5
 
-12. 사과와 복숭아는 품종 전환과 신규 식재로 재배면적이 비교적 유지될 가능성이 언급됐다. 여름사과는 기존 품종에서 시장성이 높은 품종으로 전환되는 흐름이 있다.
+9. [2025 추석 수급 전망 - 농산물] 과일 ’양호’·채소 ’불안’…정부, 비축물량 확대·할인 지원으로 소비 안정 도모
+   - 날짜: 2025-09-19
+   - 출처: 농수축산신문
+   - 요약: [2025 추석 수급 전망 - 농산물] 과일 ’양호’·채소 ’불안’…정부, 비축물량 확대·할인 지원으로 소비 안정 도모 농수축산신문.
+   - 수집 검색어: 사과 가격 과일 농산물
+   - 링크: https://news.google.com/rss/articles/CBMibEFVX3lxTFBIdGFVMWtqSzhwMnJFWFE1X0hIekkxSV9mXzc2aEdSMndFUUkwRjNvVFM4NFVZd09qTkJycFB3QTA2WUR1ai1OWUc2R2Z6aUdNc2dma2ZOajNiZ1VjZTdIQ0JZTkIwUmowMjZfUQ?oc=5
 
-13. 포도 재배면적은 다른 품목으로 전환하는 사례가 늘면서 감소 전망이 나왔다. 이는 향후 고품질 포도 물량 관리와 수출 물량 확보에 영향을 줄 수 있다.
+10. 드디어 가격 떨어지나…9월 중순부터 쏟아진다는 한국인 선호 '1위 과일' 정체
+   - 날짜: 2025-09-05
+   - 출처: 위키트리
+   - 요약: 드디어 가격 떨어지나…9월 중순부터 쏟아진다는 한국인 선호 '1위 과일' 정체 위키트리.
+   - 수집 검색어: 사과 가격 과일 농산물
+   - 링크: https://news.google.com/rss/articles/CBMiVkFVX3lxTE9HZlNsUk5icWV3V0pJMGZrVGlmXzhCdzVLQnJWeVVyN1RhOEREUG5DOUpjX28tMVVNUGIwbnlTWTRFTFRFQlVUR05IRE9VbHA2bldkbDNR?oc=5
 
-14. KREI 2026년 4월 과일 관측자료에서는 사과와 배 가격이 전년 대비 하락할 수 있다는 전망이 언급됐다. 이는 전년 고가격 기저효과와 수급 변화가 함께 작용한 것으로 볼 수 있다.
+11. "올해 농사 망쳤다" 농부들 한숨…식탁 물가 '초비상' [이슈+]
+   - 날짜: 2025-10-13
+   - 출처: 한국경제
+   - 요약: "올해 농사 망쳤다" 농부들 한숨…식탁 물가 '초비상' [이슈+] 한국경제.
+   - 수집 검색어: 사과 가격 과일 농산물
+   - 링크: https://news.google.com/rss/articles/CBMiWkFVX3lxTE1ORnhXSjBmQ3VRcUp5MlpXcmhpMmtNYXdsVEdlUDBoeU5xdzM4S2g3ZjRaQ25GbExwd3lIM0ZyTzk2LTVoc01vem1aRzZBYXAtZnFoVE0xbUxsZ9IBVEFVX3lxTE43dlVndGNqUDJpdl80S012X3p2YWsyMHZBY2VJX2U5SzJ3UG1FOTBuQ2d3bTlkZGNMNGtSTlh3cmRFYU5jWC15NEY4WDJHLXZCcGhGRg?oc=5
 
-15. 배 시장은 국내외에서 고품질 물량 부족과 가격 변동성이 동시에 나타나는 품목으로 평가된다. 한국 배는 수출 품목으로도 중요하지만, 국내 저장·출하 전략에 따라 가격 체감이 달라질 수 있다.
+12. [추석 과일시장 결산] ‘사과’ 대과 부족에 품위별 가격 양극화…비주류 품종 약진
+   - 날짜: 2025-10-09
+   - 출처: 농민신문
+   - 요약: [추석 과일시장 결산] ‘사과’ 대과 부족에 품위별 가격 양극화…비주류 품종 약진 농민신문.
+   - 수집 검색어: 사과 가격 과일 농산물
+   - 링크: https://news.google.com/rss/articles/CBMiWkFVX3lxTFBxalY5TmNwSmpmZnBGS1lKN1c4ZGpmdElYbDVjNGNKQWlJYkZNMjFuY1NhM1JRVE1NYUVOWklJd1dMT1ZxQzNIbi1aVm9vbW9DVHZpcjlNOWlsUQ?oc=5
 
-16. 미국 과일 시장에서는 사과 공급 전망이 타이트하다는 보고가 나왔다. 낮은 포장 가능 물량과 기후 영향이 신선 시장 출하량에 부담으로 작용할 수 있다.
+13. 사과 등 농산물 가격 상승, 정부 대책 부족 때문? → 기상 재해로 인한 공급 부족, 정부 특단 대책으로 물가 안정 총력 대응
+   - 날짜: 2024-03-19
+   - 출처: 대한민국 정책브리핑
+   - 요약: 사과 등 농산물 가격 상승, 정부 대책 부족 때문?.
+   - 수집 검색어: 사과 가격 과일 농산물
+   - 링크: https://news.google.com/rss/articles/CBMib0FVX3lxTE9yODlkSVdIbTh1RDVBa3I3emhUMnNHR2QwdndZbVVDbWdSNDFNdnpieFZ1NmwycDk5ZUhERkRiZW5XdjRkdE14MnRReHJVN1BWMTR4c0FkUWRqdTFvdTZxQlBvWXdpNzZ0NGxyUmJjWQ?oc=5
 
-17. 글로벌 배 시장은 고품질 과실 부족이 무역과 가격에 영향을 주는 흐름으로 분석됐다. 국가별 생산 감소와 품질 차이가 가격 경쟁에 직접 연결되고 있다.
+14. 정부 역대 최대 사과값 지원 효과 있을까…"수요 분산해야"
+   - 날짜: 2024-03-17
+   - 출처: 연합뉴스
+   - 요약: 정부 역대 최대 사과값 지원 효과 있을까…"수요 분산해야" 연합뉴스.
+   - 수집 검색어: 사과 가격 과일 농산물
+   - 링크: https://news.google.com/rss/articles/CBMiW0FVX3lxTE1NVjdsODRIUDcyNmp2UG9JcE8wS3o3bllPQUhobWZhaG5Iak05Z1ZhVktXeXYxRzZKb3JuMDBQUnhvVHdPNmVqS0xYa3N5b0FvNWZDZEppaXVXQzDSAWBBVV95cUxNeDZNdWJyLUlnSXdfZFBwd0VnZlNTTlhuRzVVRVQ0NTZnOUM4Q0N2S1hhcnh0ZmpzdlpqRlExM2pRajR6aE82MmpFNnFGYUw5MW5ZYUhtbTlJVHZoVUdqWE4?oc=5
 
-18. 바나나와 파인애플 등 수입 과일은 글로벌 수요와 생산 변수에 따라 공급이 타이트해질 수 있다는 시장 보고가 있었다. 수입 과일은 환율과 물류비도 함께 고려해야 한다.
+15. 손 떨면서 산다…작년보다 31% 올라 금값된 '국민 과일' 정체
+   - 날짜: 2025-10-06
+   - 출처: 위키트리
+   - 요약: 손 떨면서 산다…작년보다 31% 올라 금값된 '국민 과일' 정체 위키트리.
+   - 수집 검색어: 사과 가격 과일 농산물
+   - 링크: https://news.google.com/rss/articles/CBMiVkFVX3lxTE9zdkhHYkxzWWxQMEloZVI3WmZqeHROMTJlR2cwUjlkTUxiUEw5LUY1Q1dONG1FVFNhWTlJUEVZYTdWUkJNcXdXNmFRMk1IV2E5OE1jMW1n?oc=5
 
-19. 감귤류는 품종과 크기별 수급 차이가 뚜렷해지고 있다. 일부 시장 보고서는 작은 크기의 감귤류 공급이 상대적으로 부족할 수 있다고 분석했다.
+16. 32년 만의 과일값 폭등, 원인도 있고 대안도 있다
+   - 날짜: 2024-03-20
+   - 출처: 시사IN
+   - 요약: 32년 만의 과일값 폭등, 원인도 있고 대안도 있다 시사IN.
+   - 수집 검색어: 사과 가격 과일 농산물
+   - 링크: https://news.google.com/rss/articles/CBMiakFVX3lxTFBILTdXcnhta0hiYm90ZmZtRFdvZ1l6M3dxUmRMandaMjUxWWtYQTJOZ1R1M0NjWUdjek5ZakFjQmloSEFCbVVSZ2ZrYlo0SzVEaGpqcFIzWENLZHhZeUl3Q01RME9uX0ZqOWc?oc=5
 
-20. 학교 과일간식 정책처럼 공공 급식 수요가 확대되면 국산 과일의 안정적 판로가 늘어날 수 있다. 사과, 배, 포도, 복숭아, 감귤, 단감, 키위, 딸기, 참외, 수박 등이 활용 품목으로 언급됐다.
+17. 이달에도 과일 비싸다…사과 도매가, 1년 전의 '두 배'
+   - 날짜: 2023-11-05
+   - 출처: 연합뉴스
+   - 요약: 이달에도 과일 비싸다…사과 도매가, 1년 전의 '두 배' 연합뉴스.
+   - 수집 검색어: 사과 가격 과일 농산물
+   - 링크: https://news.google.com/rss/articles/CBMiW0FVX3lxTFBzazNwZUE2d0gya3NfRGNiR25La0JoR1JFLVVxUEtGY1ppMmVsTDcyMmFXTG5WU3dVYlZpM0xHc3Bnc1RsN0pjZnRob2RHUkVrbFU5NzZpTnRacTDSAWBBVV95cUxPSllHTmFabElZbDdyUVBSSXdvNE9HcnJWdEtreHBqSzdXOHI2T1pGdDcweDNWYlY2aWo1T2drV1l2TkxZaTFiZUlJTnBoTGhqYkNVU003cWtlTHRMTUlra2M?oc=5
 
-## 챗봇 답변 활용 포인트
+18. 비싸도 사 먹는다…가격 15% 올랐는데 나오자마자 2205 상자 완판된 '국민 과일'
+   - 날짜: 2025-08-27
+   - 출처: 위키트리
+   - 요약: 비싸도 사 먹는다…가격 15% 올랐는데 나오자마자 2205 상자 완판된 '국민 과일' 위키트리.
+   - 수집 검색어: 사과 가격 과일 농산물
+   - 링크: https://news.google.com/rss/articles/CBMiVkFVX3lxTFBWMENTcGtVVjkxV29Rb3lVcmdrdGtMcUZzOTBrVEMzZV9qVmJSaC1jMi01YUZ3Mjc1bDR1RmRIOTBHREdQMnhsYzYzRWllUXBybVlaczl3?oc=5
 
-- 가격 질문에는 기후, 출하량, 품질, 저장 물량, 수출 수요, 공공 수요를 함께 고려한다.
-- 판매 전략 질문에는 품목별 가격 민감도와 대체 과일을 함께 본다.
-- 수확·선별 질문에는 품질 균일화와 고품질 물량 확보가 중요하다고 설명할 수 있다.
-- 수출 질문에는 딸기, 포도, 배를 우선 품목으로 보고, 시장별 선호와 검역 조건을 함께 고려한다.
+19. 추석 전 '금값' 돼 난리...딱 7일간 반값에 풀리는 '국민 과일' 정체
+   - 날짜: 2025-09-10
+   - 출처: 위키트리
+   - 요약: 추석 전 '금값' 돼 난리...딱 7일간 반값에 풀리는 '국민 과일' 정체 위키트리.
+   - 수집 검색어: 사과 가격 과일 농산물
+   - 링크: https://news.google.com/rss/articles/CBMiVkFVX3lxTFBqWkRkRjZsa2sza1ExRzdGZGZ2dERIT2JWMVFzVzk4SjR0RlM2WnVaeG1rZXVfU3o2TE9HaGdKWGNMT2Z6RGtUYnJtVmRaMWN6NGpDSWJR?oc=5
 
-## 참고 출처
+20. 얼른 사둘 걸…곧 추석인데 최대 20% 급등한 제사상 필수 '국민 과일'
+   - 날짜: 2025-09-11
+   - 출처: 위키트리
+   - 요약: 얼른 사둘 걸…곧 추석인데 최대 20% 급등한 제사상 필수 '국민 과일' 위키트리.
+   - 수집 검색어: 사과 가격 과일 농산물
+   - 링크: https://news.google.com/rss/articles/CBMiVkFVX3lxTFA0Z2stYkQ0aTg5aWRSd2Y1N2NvRVliWm1pOXFMWXdzZEVNRzlNSkN4RE16MTlWMGRQQVRjMEt5OTRqM0o3MjZRelVCdlE5WWl3N1dRS0dB?oc=5
 
-- Korea JoongAng Daily, Feeling berry appreciated, 2026-02-04: https://koreajoongangdaily.joins.com/news/2026-02-04/business/industry/Feeling-berry-appreciated/2516155
-- Korea JoongAng Daily, Bad news berries, 2026-01-07: https://koreajoongangdaily.joins.com/news/2026-01-07/business/industry/Bad-news-berries-Prices-of-strawberries-tangerines-spike-on-falling-production-disrupted-supply/2493230
-- Seoul Economic Daily, Korean Winter Fruits Hit Record Prices, 2026-02-05: https://en.sedaily.com/finance/2026/02/05/korean-winter-fruits-hit-record-prices-as-climate-shocks
-- Asia Business Daily, Winter fruit prices remain high, 2026-02-05: https://www.asiae.co.kr/en/article/2026020510480295538
-- Chosun, 신품종 K포도·K딸기, 2026-04-16: https://www.chosun.com/special/special_section/2026/04/16/WACB6LFWXRAUNPUW6Y2E7RH22I/
-- Fruitnet, Home-bred varieties lead Korea's export push, 2026-04-08: https://www.fruitnet.com/asiafruit/home-bred-varieties-lead-koreas-export-push/271118.article
-- Korea Times, Korea bets homegrown fruit will bear sweet rewards abroad, 2026-03-31: https://www.koreatimes.co.kr/business/others/20260331/korea-bets-homegrown-fruit-will-bear-sweet-rewards-abroad
-- Fruitnet, Korean strawberry industry eyes smart-farm technology, 2026-02-19: https://www.fruitnet.com/asiafruit/korean-strawberry-industry-eyes-smart-farm-technology-as-demand-grows-in-export-and-domestic-markets/270618.article
-- ChosunBiz, Nonsan strawberries power Korea's winter boom, 2026-01-24: https://biz.chosun.com/en/en-society/2026/01/24/NYH66ZHY3VF4TDBW2TBICV7YSM/
-- ChosunBiz, K-food exports climb, 2026-04-03: https://biz.chosun.com/en/en-policy/2026/04/03/VMH2RQAKOFGCXBF2NSP6WJDOQU/
-- Nongmin, 농업전망 2026, 2026-01-23: https://www.nongmin.com/article/20260123500614
-- Foodicon, 2026년 농식품 시장 전망, 2026-01: https://www.foodicon.co.kr/news/articleView.html?idxno=32176
-- 대한급식신문, 2026 농업전망 품목별 수급, 2026-01: https://www.fsnews.co.kr/news/articleView.html?idxno=59831
-- KREI 농업관측 과일 2026년 4월호: https://aglook.krei.re.kr/upload/observeFiles/d23ef3624ad74977afaa385e02444e33.pdf
-- EastFruit, Global pear market 2026 season overview: https://east-fruit.com/en/trending/global-pear-market-shortage-of-high-quality-fruit-reshapes-trade-and-prices-2026-season-overview/
-- USDA ERS, Fruit and Tree Nuts Market Outlook: https://www.ers.usda.gov/topics/crops/fruit-and-tree-nuts/market-outlook
-- Produce Alliance, Weekly Market Review 2026-02-26: https://producealliance.com/wp-content/uploads/2026/02/Market-Report-2.26.26_FULL.pdf
-- 대한민국 정책브리핑, 늘봄학교 과일간식 지원, 2026-01-30: https://www.korea.kr/news/policyFocusView.do?newsId=148958851
+## 챗봇 답변 활용 기준
+
+- 뉴스는 가격 예측을 대체하지 않고, 시세예측과 재고 현황을 해석하는 보조 신호로 사용한다.
+- 판매시기 질문에는 가격 방향, 수급 압력, 기후 리스크, 수요 변화를 함께 고려한다.
+- 단순 재고·상품등록 질문에는 뉴스 내용으로 답변을 과하게 확장하지 않는다.
+- 링크는 출처 확인용이며, 답변에서는 사용자가 요청하지 않는 한 기사 링크를 길게 나열하지 않는다.

@@ -1,11 +1,10 @@
 import os
 
-from dotenv import load_dotenv
-
+from app.config import load_app_env
 from app.db.vector_search import search_similar_chunks
 from app.rag.embedder import embed_text
 
-load_dotenv()
+load_app_env()
 
 TOP_K = int(os.getenv("RAG_TOP_K", "4"))
 DISTANCE_THRESHOLD = float(os.getenv("RAG_DISTANCE_THRESHOLD", "0.52"))

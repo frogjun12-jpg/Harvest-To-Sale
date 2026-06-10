@@ -1,4 +1,7 @@
 .env
+.env.pro
+editions/free/.env
+editions/pro/.env.pro
 .venv/
 venv/
 env/
@@ -16,5 +19,7 @@ __pycache__/
 .mariadb-data/
 
 *.log
+*.out
+*.err
 .DS_Store
 Thumbs.db
