@@ -675,12 +675,8 @@ with st.sidebar:
         unsafe_allow_html=True,
     )
     render_free_sidebar_ad()
-
-top_left, top_right = st.columns([5, 1])
-with top_left:
-    st.caption(f"{admin_user['display_name']}님 로그인 · {CHAT_PROVIDER_LABEL}")
-with top_right:
-    if st.button("로그아웃", key="top_logout", use_container_width=True):
+    st.markdown("<div style='height: 1.2rem'></div>", unsafe_allow_html=True)
+    if st.button("로그아웃", key="sidebar_logout", use_container_width=True):
         st.session_state.pop("admin_user", None)
         st.rerun()
 
@@ -787,13 +783,6 @@ if selected_page == "대시보드":
     for index, product in enumerate(products[:6]):
         with inventory_cols[index % 3]:
             render_product_card(product)
-
-    assistant_col, side_col = st.columns([1.35, 1])
-    with assistant_col:
-        render_ai_assistant(show_sources=False)
-    with side_col:
-        render_recent_orders(orders)
-        render_news_summary(limit=5)
 
 if selected_page == "AI 도우미":
     left, right = st.columns([1.45, 1])
