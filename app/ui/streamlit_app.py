@@ -20,6 +20,10 @@ FORECAST_DOC_PATH = PROJECT_ROOT / "rag_docs" / "apple_price_forecast_chronos_mi
 NEWS_DOC_PATH = PROJECT_ROOT / "rag_docs" / "fruit_news_2026.md"
 ASSET_DIR = Path(__file__).resolve().parent / "assets"
 ADMIN_PROMO_IMAGE_PATH = ASSET_DIR / "apple-market-banner.png"
+FREE_PROMO_IMAGE_PATHS = (
+    ASSET_DIR / "ai-campus-onsite-ad.png",
+    ASSET_DIR / "ai-campus-semiconductor-ad.png",
+)
 APP_EDITION = os.getenv("APP_EDITION", "free").strip().lower()
 IS_PRO_EDITION = APP_EDITION == "pro"
 ADMIN_PAGE_TITLE = os.getenv("ADMIN_PAGE_TITLE", "Manage Apple Pro" if IS_PRO_EDITION else "Manage Apple")
@@ -141,6 +145,39 @@ st.markdown(
         border: 1px solid rgba(23,35,29,.08);
         display: block;
     }
+    .right-ad-rail {
+        position: fixed;
+        top: 5.25rem;
+        right: 1.15rem;
+        width: 306px;
+        z-index: 50;
+        display: flex;
+        flex-direction: column;
+        gap: .8rem;
+    }
+    .right-ad-rail img {
+        width: 100%;
+        max-height: calc((100vh - 7.8rem) / 2);
+        object-fit: contain;
+        border-radius: 8px;
+        border: 1px solid rgba(23,35,29,.16);
+        box-shadow: 0 14px 32px rgba(23,35,29,.16);
+        background: #54c6ef;
+        display: block;
+    }
+    @media (min-width: 1500px) {
+        .block-container { padding-right: 342px; }
+    }
+    @media (max-width: 1499px) {
+        .right-ad-rail {
+            position: static;
+            width: min(100%, 380px);
+            margin: 0 0 1rem auto;
+        }
+        .right-ad-rail img {
+            max-height: 460px;
+        }
+    }
     .timeline-item {
         border-left: 3px solid #16713a;
         padding: .25rem 0 .65rem .7rem;
@@ -151,6 +188,9 @@ st.markdown(
     }
     .timeline-time { color:#7a847d; font-size:.75rem; font-weight:800; }
     div[data-testid="stButton"] button { border-radius: 8px; font-weight: 850; }
+    div[data-testid="stButton"] button {
+        transition: background-color .14s ease, color .14s ease, border-color .14s ease;
+    }
     section[data-testid="stSidebar"] div[data-testid="stButton"] button {
         justify-content: flex-start;
         width: 100%;
@@ -163,6 +203,14 @@ st.markdown(
     section[data-testid="stSidebar"] div[data-testid="stButton"] button[kind="primary"] {
         background: #16713a;
         color: #fff;
+    }
+    div[data-testid="stButton"] button[kind="secondary"]:hover,
+    section[data-testid="stSidebar"] div[data-testid="stButton"] button:hover,
+    section[data-testid="stSidebar"] div[data-testid="stButton"] button[kind="primary"]:hover {
+        background: #eef0ef !important;
+        color: #c9281f !important;
+        border-color: #d7ddda !important;
+        box-shadow: none !important;
     }
     div[data-testid="stTextArea"] textarea,
     div[data-testid="stTextInput"] input,
@@ -197,6 +245,13 @@ def api_put(path: str, payload: dict):
     return response.json()
 
 
+def fetch_shop_settings() -> dict:
+    try:
+        return api_get("/sales/settings/shop")
+    except requests.RequestException:
+        return {"shop_page_title": "Apple Market"}
+
+
 @st.cache_data(ttl=30)
 def fetch_products() -> list:
     return api_get("/sales/products")
@@ -228,6 +283,13 @@ def image_data_uri(path: Path) -> str:
 
 def format_won(value: int) -> str:
     return f"{int(value):,}원"
+
+
+def format_kg(value: float) -> str:
+    numeric_value = float(value)
+    if numeric_value.is_integer():
+        return f"{int(numeric_value):,}kg"
+    return f"{numeric_value:,.2f}kg"
 
 
 def item_name(item: dict) -> str:
@@ -281,8 +343,8 @@ def render_product_card(product: dict) -> None:
             <span class="pill">{html.escape(product['package_unit'])}</span>
           </div>
           <div class="product-meta">
-            기준 재고 {int(product['base_available_kg']):,}kg · 쇼핑몰 등록 {int(product['listed_kg']):,}kg<br>
-            추가 등록 가능 <strong>{int(product['available_kg']):,}kg</strong> · 판매 완료 {int(product['sold_kg']):,}kg<br>
+            기준 재고 {format_kg(product['base_available_kg'])} · 쇼핑몰 등록 {format_kg(product['listed_kg'])}<br>
+            추가 등록 가능 <strong>{format_kg(product['available_kg'])}</strong> · 판매 완료 {format_kg(product['sold_kg'])}<br>
             <span class="price">{format_won(product['recommended_price_per_kg'])}/kg</span>
           </div>
         </div>
@@ -512,27 +574,25 @@ def render_notification_toasts() -> None:
     )
 
 
-def render_free_sidebar_ad() -> None:
+def render_free_right_ad() -> None:
     if IS_PRO_EDITION:
         return
 
-    image_uri = image_data_uri(ADMIN_PROMO_IMAGE_PATH)
-    image_html = (
-        f'<img class="side-ad-image" src="{image_uri}" alt="Apple Market">'
-        if image_uri
-        else ""
-    )
+    image_tags = []
+    for path in FREE_PROMO_IMAGE_PATHS:
+        image_uri = image_data_uri(path)
+        if image_uri:
+            image_tags.append(f'<img src="{image_uri}" alt="AI campus bootcamp ad">')
+
+    if not image_tags:
+        return
+
     st.markdown(
-        f"""
-        <div class="side-ad">
-          <div class="side-ad-label">APPLE MARKET</div>
-          <div class="side-ad-title">오늘 수확한 사과를 바로 판매하세요</div>
-          <div class="side-ad-copy">
-            AI가 추천한 판매 문구와 재고 기준으로 상품 등록까지 이어집니다.
-          </div>
-          {image_html}
-        </div>
-        """,
+        """
+        <aside class="right-ad-rail">
+          {images}
+        </aside>
+        """.format(images="\n".join(image_tags)),
         unsafe_allow_html=True,
     )
 
@@ -644,6 +704,7 @@ with st.sidebar:
         ("대시보드", "📊  대시보드"),
         ("판매상품등록", "📝  판매상품등록"),
         ("판매중인상품", "🍎  판매중인상품"),
+        ("판매페이지 관리", "🛒  판매페이지 관리"),
         ("AI 도우미", "🤖  AI 도우미"),
         ("가격 정보 업데이트", "🔄  가격 정보 업데이트"),
         ("최신 뉴스 업데이트", "📰  최신 뉴스 업데이트"),
@@ -657,6 +718,7 @@ with st.sidebar:
             use_container_width=True,
         ):
             st.session_state.admin_page = page_name
+            st.rerun()
     selected_page = st.session_state.admin_page
     st.markdown(
         """
@@ -674,11 +736,12 @@ with st.sidebar:
         ),
         unsafe_allow_html=True,
     )
-    render_free_sidebar_ad()
     st.markdown("<div style='height: 1.2rem'></div>", unsafe_allow_html=True)
     if st.button("로그아웃", key="sidebar_logout", use_container_width=True):
         st.session_state.pop("admin_user", None)
         st.rerun()
+
+render_free_right_ad()
 
 st.markdown(
     """
@@ -724,7 +787,7 @@ latest_date, doc_status = latest_price_info()
 latest_news_date, news_doc_status = latest_news_info()
 
 if selected_page == "대시보드":
-    total_available_kg = sum(int(product["available_kg"]) for product in products)
+    total_available_kg = sum(float(product["available_kg"]) for product in products)
     total_listed_kg = sum(int(product["listed_kg"]) for product in products)
 
     st.markdown('<div class="section-label">📊 기능 바로가기</div>', unsafe_allow_html=True)
@@ -739,7 +802,7 @@ if selected_page == "대시보드":
         (
             "📝",
             "판매상품등록",
-            f"{total_available_kg:,}kg",
+            format_kg(total_available_kg),
             "쇼핑몰에 추가 등록 가능한 재고를 상품으로 올립니다.",
             "판매상품등록",
         ),
@@ -784,6 +847,41 @@ if selected_page == "대시보드":
         with inventory_cols[index % 3]:
             render_product_card(product)
 
+if selected_page == "판매페이지 관리":
+    st.markdown('<div class="section-label">🛒 판매페이지 관리</div>', unsafe_allow_html=True)
+    settings = fetch_shop_settings()
+    current_title = settings.get("shop_page_title", "Apple Market")
+
+    with st.container(border=True):
+        st.caption("쇼핑몰 상단에 표시되는 판매페이지 이름입니다.")
+        shop_page_title = st.text_input(
+            "판매페이지 제목",
+            value=current_title,
+            max_chars=80,
+        )
+        if st.button("제목 저장", type="primary", use_container_width=True):
+            try:
+                updated = api_put(
+                    "/sales/settings/shop",
+                    {"shop_page_title": shop_page_title.strip()},
+                )
+            except requests.RequestException as exc:
+                st.error(f"판매페이지 제목 저장 실패: {exc}")
+            else:
+                st.success(f"판매페이지 제목을 '{updated['shop_page_title']}'로 저장했습니다.")
+                st.rerun()
+
+    st.markdown(
+        f"""
+        <div class="info-card">
+          <div class="metric-label">현재 판매페이지 제목</div>
+          <div class="metric-value">{html.escape(current_title)}</div>
+          <div class="metric-note">쇼핑몰을 새로고침하면 변경된 제목이 반영됩니다.</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
 if selected_page == "AI 도우미":
     left, right = st.columns([1.45, 1])
     with left:
@@ -796,7 +894,7 @@ if selected_page == "판매상품등록":
     st.markdown('<div class="section-label">📝 판매상품등록</div>', unsafe_allow_html=True)
     if products:
         labels = [
-            f"{item_name(item)} · 추가 가능 {int(item['available_kg']):,}kg · {format_won(item['recommended_price_per_kg'])}/kg"
+            f"{item_name(item)} · 추가 가능 {format_kg(item['available_kg'])} · {format_won(item['recommended_price_per_kg'])}/kg"
             for item in products
         ]
         selected_label = st.selectbox("재고 선택", labels)
@@ -833,7 +931,7 @@ if selected_page == "판매상품등록":
                 <div class="product-card">
                   <div class="product-title">{html.escape(item_name(product))}</div>
                   <div class="product-meta">
-                    추가 등록 가능 <strong>{int(product['available_kg']):,}kg</strong><br>
+                    추가 등록 가능 <strong>{format_kg(product['available_kg'])}</strong><br>
                     추천 판매가 <span class="price">{format_won(product['recommended_price_per_kg'])}/kg</span><br>
                     등록 예정 수량 {int(quantity_kg):,}kg
                   </div>

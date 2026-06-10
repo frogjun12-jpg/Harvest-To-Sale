@@ -15,6 +15,10 @@ API_BASE_URL = CHAT_API_URL.rsplit("/", 1)[0]
 ASSET_DIR = Path(__file__).resolve().parent / "assets"
 APPLE_IMAGE_PATH = ASSET_DIR / "apple-hero.png"
 PROMO_IMAGE_PATH = ASSET_DIR / "apple-market-banner.png"
+FREE_PROMO_IMAGE_PATHS = (
+    ASSET_DIR / "ai-campus-onsite-ad.png",
+    ASSET_DIR / "ai-campus-semiconductor-ad.png",
+)
 PRODUCT_IMAGE_PATHS = {
     ("대", "상"): ASSET_DIR / "apple-large-premium.png",
     ("대", "중"): ASSET_DIR / "apple-large-standard.png",
@@ -25,7 +29,8 @@ PRODUCT_IMAGE_PATHS = {
 }
 SHOP_EDITION = os.getenv("SHOP_EDITION", "free").strip().lower()
 IS_PRO_SHOP = SHOP_EDITION == "pro"
-SHOP_PAGE_TITLE = os.getenv("SHOP_PAGE_TITLE", "Apple Market Pro" if IS_PRO_SHOP else "Apple Market")
+DEFAULT_SHOP_PAGE_TITLE = os.getenv("SHOP_PAGE_TITLE", "Apple Market Pro" if IS_PRO_SHOP else "Apple Market")
+SHOP_PAGE_TITLE = DEFAULT_SHOP_PAGE_TITLE
 SHOP_LOGIN_DEFAULT_USERNAME = os.getenv(
     "SHOP_LOGIN_DEFAULT_USERNAME",
     os.getenv("APP_CUSTOMER_PRO_USERNAME", "customerpro") if IS_PRO_SHOP else os.getenv("APP_CUSTOMER_USERNAME", "customer"),
@@ -95,6 +100,39 @@ st.markdown(
         border-radius: 8px;
         border: 1px solid rgba(23,35,29,.08);
     }
+    .right-ad-rail {
+        position: fixed;
+        top: 5.25rem;
+        right: 1.15rem;
+        width: 306px;
+        z-index: 50;
+        display: flex;
+        flex-direction: column;
+        gap: .8rem;
+    }
+    .right-ad-rail img {
+        width: 100%;
+        max-height: calc((100vh - 7.8rem) / 2);
+        object-fit: contain;
+        border-radius: 8px;
+        border: 1px solid rgba(23,35,29,.16);
+        box-shadow: 0 14px 32px rgba(23,35,29,.16);
+        background: #54c6ef;
+        display: block;
+    }
+    @media (min-width: 1500px) {
+        .block-container { padding-right: 342px; }
+    }
+    @media (max-width: 1499px) {
+        .right-ad-rail {
+            position: static;
+            width: min(100%, 380px);
+            margin: 0 0 1rem auto;
+        }
+        .right-ad-rail img {
+            max-height: 460px;
+        }
+    }
     .hero-image {
         width: 260px;
         max-height: 118px;
@@ -108,6 +146,7 @@ st.markdown(
         color: #17231d;
         font-size: 1.08rem;
         font-weight: 950;
+        white-space: nowrap;
     }
     .product-card { min-height: 366px; margin-bottom: .8rem; overflow:hidden; padding:0; }
     .product-image {
@@ -154,6 +193,10 @@ st.markdown(
     .history-title { color:#17231d; font-weight:950; font-size:1.05rem; }
     .history-meta { color:#5c685f; line-height:1.55; margin-top:.2rem; font-size:.92rem; }
     div[data-testid="stButton"] button { border-radius: 8px; font-weight: 850; }
+    div[data-testid="stButton"] button,
+    div[data-testid="stButton"] button p {
+        white-space: nowrap;
+    }
     div[data-testid="stButton"] button[kind="primary"] {
         background: #c9281f;
         border-color: #c9281f;
@@ -189,6 +232,14 @@ def api_post(path: str, payload: dict):
     response = requests.post(f"{API_BASE_URL}{path}", json=payload, timeout=30)
     response.raise_for_status()
     return response.json()
+
+
+def get_shop_page_title() -> str:
+    try:
+        settings = api_get("/sales/settings/shop")
+    except requests.RequestException:
+        return DEFAULT_SHOP_PAGE_TITLE
+    return settings.get("shop_page_title") or DEFAULT_SHOP_PAGE_TITLE
 
 
 def require_login() -> dict:
@@ -261,6 +312,29 @@ def render_free_sidebar_ad() -> None:
     )
 
 
+def render_free_right_ad() -> None:
+    if IS_PRO_SHOP:
+        return
+
+    image_tags = []
+    for path in FREE_PROMO_IMAGE_PATHS:
+        image_uri = image_data_uri(path)
+        if image_uri:
+            image_tags.append(f'<img src="{image_uri}" alt="AI campus bootcamp ad">')
+
+    if not image_tags:
+        return
+
+    st.markdown(
+        """
+        <aside class="right-ad-rail">
+          {images}
+        </aside>
+        """.format(images="\n".join(image_tags)),
+        unsafe_allow_html=True,
+    )
+
+
 apple_image_uri = image_data_uri(APPLE_IMAGE_PATH)
 promo_banner_uri = image_data_uri(PROMO_IMAGE_PATH)
 product_image_uris = {
@@ -268,8 +342,9 @@ product_image_uris = {
     for key, path in PRODUCT_IMAGE_PATHS.items()
 }
 
+SHOP_PAGE_TITLE = get_shop_page_title()
 shop_user = require_login()
-render_free_sidebar_ad()
+render_free_right_ad()
 
 hero_image = f'<img class="hero-image" src="{apple_image_uri}" />' if apple_image_uri else ""
 st.markdown(
@@ -304,7 +379,7 @@ with user_cols[1]:
 if "shop_page" not in st.session_state:
     st.session_state.shop_page = "상품목록"
 
-page_cols = st.columns([0.8, 0.8, 4.4], gap="small")
+page_cols = st.columns([1.05, 1.05, 3.9], gap="small")
 with page_cols[0]:
     if st.button(
         "상품목록",
@@ -358,7 +433,7 @@ except requests.RequestException as exc:
 if "shop_size_filter" not in st.session_state:
     st.session_state.shop_size_filter = "전체"
 
-filter_cols = st.columns([0.66, 0.62, 0.62, 0.62, 3.3, 1], gap="small")
+filter_cols = st.columns([1.05, 0.72, 0.72, 0.78, 2.95, 1.2], gap="small")
 with filter_cols[0]:
     st.markdown('<div class="catalog-label">🛒 상품목록</div>', unsafe_allow_html=True)
 for col, filter_name in zip(filter_cols[1:4], ["전체", "대과", "중과"]):

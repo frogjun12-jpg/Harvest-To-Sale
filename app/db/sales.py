@@ -85,6 +85,110 @@ SAMPLE_PRODUCTS = [
 ]
 
 
+def decimal_to_float(value) -> float:
+    return round(float(value or 0), 3)
+
+
+def get_sample_product(product_name: str, size_class: str, grade: str) -> dict:
+    return next(
+        item
+        for item in SAMPLE_PRODUCTS
+        if (
+            item["product_name"] == product_name
+            and item["size_class"] == size_class
+            and item["grade"] == grade
+        )
+    )
+
+
+def ensure_inventory_tables() -> None:
+    with db_cursor() as cursor:
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS apple_inventory (
+                id BIGINT PRIMARY KEY AUTO_INCREMENT,
+                product_name VARCHAR(128) NOT NULL DEFAULT '사과',
+                size_class VARCHAR(32) NOT NULL,
+                grade VARCHAR(32) NOT NULL,
+                available_kg DECIMAL(12, 3) NOT NULL DEFAULT 0,
+                reserved_kg DECIMAL(12, 3) NOT NULL DEFAULT 0,
+                package_unit VARCHAR(64) NOT NULL,
+                sales_channel VARCHAR(64) NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                UNIQUE KEY uq_apple_inventory_product_grade (product_name, size_class, grade)
+            )
+            """
+        )
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS harvest_events (
+                id BIGINT PRIMARY KEY AUTO_INCREMENT,
+                product_name VARCHAR(128) NOT NULL DEFAULT '사과',
+                size_class VARCHAR(32) NOT NULL,
+                quality_grade VARCHAR(32) NOT NULL,
+                estimated_weight_kg DECIMAL(8, 3) NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_harvest_events_created_at (created_at),
+                INDEX idx_harvest_events_product_grade (product_name, size_class, quality_grade)
+            )
+            """
+        )
+
+        for product in SAMPLE_PRODUCTS:
+            cursor.execute(
+                """
+                INSERT IGNORE INTO apple_inventory (
+                    product_name, size_class, grade, available_kg, reserved_kg,
+                    package_unit, sales_channel
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    product["product_name"],
+                    product["size_class"],
+                    product["grade"],
+                    product["available_kg"],
+                    product["reserved_kg"],
+                    product["package_unit"],
+                    product["sales_channel"],
+                ),
+            )
+
+
+def list_inventory_products() -> list[dict]:
+    ensure_inventory_tables()
+    with db_cursor() as cursor:
+        cursor.execute(
+            """
+            SELECT product_name, size_class, grade, available_kg, reserved_kg,
+                   package_unit, sales_channel
+            FROM apple_inventory
+            ORDER BY
+                FIELD(size_class, '대', '중'),
+                FIELD(grade, '상', '중', '하')
+            """
+        )
+        rows = cursor.fetchall()
+
+    products = []
+    for row in rows:
+        sample_product = get_sample_product(
+            row["product_name"],
+            row["size_class"],
+            row["grade"],
+        )
+        products.append(
+            {
+                **sample_product,
+                **row,
+                "available_kg": decimal_to_float(row["available_kg"]),
+                "reserved_kg": decimal_to_float(row["reserved_kg"]),
+            }
+        )
+    return products
+
+
 def normalize_quality_grade(grade: str | None) -> str:
     if grade in {"상", "중", "하"}:
         return grade
@@ -102,15 +206,28 @@ def normalize_size_class(size_class: str | None) -> str:
 def get_product_template(product_name: str, size_class: str, grade: str) -> dict:
     size_class = normalize_size_class(size_class)
     grade = normalize_quality_grade(grade)
-    product = next(
-        item
-        for item in SAMPLE_PRODUCTS
-        if (
-            item["product_name"] == product_name
-            and item["size_class"] == size_class
-            and item["grade"] == grade
+    sample_product = get_sample_product(product_name, size_class, grade)
+    ensure_inventory_tables()
+    with db_cursor() as cursor:
+        cursor.execute(
+            """
+            SELECT product_name, size_class, grade, available_kg, reserved_kg,
+                   package_unit, sales_channel
+            FROM apple_inventory
+            WHERE product_name = ? AND size_class = ? AND grade = ?
+            """,
+            (product_name, size_class, grade),
         )
-    )
+        product = cursor.fetchone()
+    if not product:
+        product = sample_product
+    else:
+        product = {
+            **sample_product,
+            **product,
+            "available_kg": decimal_to_float(product["available_kg"]),
+            "reserved_kg": decimal_to_float(product["reserved_kg"]),
+        }
     return {
         **product,
         "recommended_price_per_kg": get_recommended_price_per_kg(
@@ -231,12 +348,15 @@ def get_listing_commitments() -> dict[tuple[str, str, str], dict[str, int]]:
     }
 
 
-def get_available_kg(product_name: str, size_class: str, grade: str) -> int:
+def get_available_kg(product_name: str, size_class: str, grade: str) -> float:
     size_class = normalize_size_class(size_class)
     grade = normalize_quality_grade(grade)
     product = get_product_template(product_name, size_class, grade)
     commitments = get_listing_commitments().get((product_name, size_class, grade), {})
-    return max(int(product["available_kg"]) - int(commitments.get("listed_kg", 0)), 0)
+    return round(
+        max(decimal_to_float(product["available_kg"]) - int(commitments.get("listed_kg", 0)), 0),
+        3,
+    )
 
 
 def validate_new_listing_quantity(
@@ -291,7 +411,7 @@ def extract_size_class(text: str) -> str | None:
 def list_products() -> list[dict]:
     commitments = get_listing_commitments()
     products: list[dict] = []
-    for product in SAMPLE_PRODUCTS:
+    for product in list_inventory_products():
         committed = commitments.get(
             (product["product_name"], product["size_class"], product["grade"]),
             {},
@@ -303,8 +423,8 @@ def list_products() -> list[dict]:
             {
                 **product,
                 "estimated_unit_weight_kg": SIZE_WEIGHT_KG[product["size_class"]],
-                "base_available_kg": int(product["available_kg"]),
-                "available_kg": max(int(product["available_kg"]) - listed_kg, 0),
+                "base_available_kg": decimal_to_float(product["available_kg"]),
+                "available_kg": round(max(decimal_to_float(product["available_kg"]) - listed_kg, 0), 3),
                 "listed_kg": listed_kg,
                 "sold_kg": sold_kg,
                 "remaining_listing_kg": remaining_listing_kg,
@@ -389,6 +509,90 @@ def create_notification(event_type: str, title: str, message: str) -> int:
             (event_type, title, message),
         )
         return int(cursor.lastrowid)
+
+
+def record_harvest_event(
+    size_class: str,
+    quality_grade: str,
+    product_name: str = "사과",
+) -> dict:
+    if size_class not in SIZE_WEIGHT_KG:
+        raise ValueError("size_class must be one of: 대, 중")
+    if quality_grade not in QUALITY_PRICE_MULTIPLIER:
+        raise ValueError("quality_grade must be one of: 상, 중, 하")
+
+    product_name = product_name.strip() or "사과"
+    grade = normalize_quality_grade(quality_grade)
+    product = get_product_template(product_name, size_class, grade)
+    estimated_weight_kg = float(SIZE_WEIGHT_KG[size_class])
+
+    with db_cursor() as cursor:
+        cursor.execute(
+            """
+            INSERT INTO harvest_events (
+                product_name, size_class, quality_grade, estimated_weight_kg
+            )
+            VALUES (?, ?, ?, ?)
+            """,
+            (product_name, size_class, grade, estimated_weight_kg),
+        )
+        event_id = int(cursor.lastrowid)
+        cursor.execute(
+            """
+            UPDATE apple_inventory
+            SET available_kg = available_kg + ?
+            WHERE product_name = ? AND size_class = ? AND grade = ?
+            """,
+            (estimated_weight_kg, product_name, size_class, grade),
+        )
+        if cursor.rowcount == 0:
+            cursor.execute(
+                """
+                INSERT INTO apple_inventory (
+                    product_name, size_class, grade, available_kg, reserved_kg,
+                    package_unit, sales_channel
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    product_name,
+                    size_class,
+                    grade,
+                    estimated_weight_kg,
+                    0,
+                    product["package_unit"],
+                    product["sales_channel"],
+                ),
+            )
+        cursor.execute(
+            """
+            SELECT available_kg
+            FROM apple_inventory
+            WHERE product_name = ? AND size_class = ? AND grade = ?
+            """,
+            (product_name, size_class, grade),
+        )
+        inventory = cursor.fetchone()
+
+    current_base_available_kg = decimal_to_float(inventory["available_kg"])
+    current_available_kg = get_available_kg(product_name, size_class, grade)
+    create_notification(
+        "harvest_recorded",
+        "로봇 수확 재고 반영",
+        (
+            f"{product_name} {size_class}과 {grade} 등급 1개가 수확 재고에 반영되었습니다. "
+            f"추가 중량: {estimated_weight_kg:.2f}kg"
+        ),
+    )
+    return {
+        "id": event_id,
+        "product_name": product_name,
+        "size_class": size_class,
+        "quality_grade": grade,
+        "estimated_weight_kg": estimated_weight_kg,
+        "current_base_available_kg": current_base_available_kg,
+        "current_available_kg": current_available_kg,
+    }
 
 
 def create_draft(data: dict) -> dict:
@@ -717,3 +921,49 @@ def mark_notification_read(notification_id: int) -> dict:
     if not row:
         raise ValueError("Notification not found")
     return row
+
+
+def ensure_app_settings_table() -> None:
+    with db_cursor() as cursor:
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS app_settings (
+                setting_key VARCHAR(120) PRIMARY KEY,
+                setting_value TEXT NOT NULL,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            )
+            """
+        )
+
+
+def get_app_setting(setting_key: str, default_value: str) -> str:
+    ensure_app_settings_table()
+    with db_cursor() as cursor:
+        cursor.execute(
+            "SELECT setting_value FROM app_settings WHERE setting_key = ?",
+            (setting_key,),
+        )
+        row = cursor.fetchone()
+    if not row:
+        return default_value
+    return str(row["setting_value"])
+
+
+def set_app_setting(setting_key: str, setting_value: str) -> str:
+    ensure_app_settings_table()
+    value = setting_value.strip()
+    if not value:
+        raise ValueError("Setting value must not be empty")
+
+    with db_cursor() as cursor:
+        cursor.execute(
+            """
+            INSERT INTO app_settings (setting_key, setting_value)
+            VALUES (?, ?)
+            ON DUPLICATE KEY UPDATE
+                setting_value = VALUES(setting_value),
+                updated_at = CURRENT_TIMESTAMP
+            """,
+            (setting_key, value),
+        )
+    return value

@@ -7,6 +7,7 @@ from app.db.sales import (
     approve_draft,
     create_draft,
     ensure_demo_purchase_history,
+    get_app_setting,
     list_drafts,
     list_listings,
     list_notifications,
@@ -16,6 +17,7 @@ from app.db.sales import (
     mark_notification_read,
     place_order,
     register_draft,
+    set_app_setting,
     update_draft,
 )
 
@@ -27,9 +29,9 @@ class ProductInventory(BaseModel):
     size_class: str
     grade: str
     estimated_unit_weight_kg: float
-    base_available_kg: int
-    available_kg: int
-    reserved_kg: int
+    base_available_kg: float
+    available_kg: float
+    reserved_kg: float
     listed_kg: int
     sold_kg: int
     remaining_listing_kg: int
@@ -117,6 +119,14 @@ class Notification(BaseModel):
     created_at: datetime
 
 
+class ShopSettings(BaseModel):
+    shop_page_title: str
+
+
+class ShopSettingsRequest(BaseModel):
+    shop_page_title: str = Field(..., min_length=1, max_length=80)
+
+
 @router.get("/products", response_model=list[ProductInventory])
 def products() -> list[ProductInventory]:
     return [ProductInventory(**product) for product in list_products()]
@@ -201,3 +211,18 @@ def read_notification(notification_id: int) -> Notification:
         return Notification(**mark_notification_read(notification_id))
     except Exception as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.get("/settings/shop", response_model=ShopSettings)
+def shop_settings() -> ShopSettings:
+    title = get_app_setting("shop_page_title", "Apple Market")
+    return ShopSettings(shop_page_title=title)
+
+
+@router.put("/settings/shop", response_model=ShopSettings)
+def update_shop_settings(request: ShopSettingsRequest) -> ShopSettings:
+    try:
+        title = set_app_setting("shop_page_title", request.shop_page_title)
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return ShopSettings(shop_page_title=title)

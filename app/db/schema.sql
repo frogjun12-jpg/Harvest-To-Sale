@@ -134,3 +134,34 @@ CREATE TABLE IF NOT EXISTS notifications (
     is_read BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS app_settings (
+    setting_key VARCHAR(120) PRIMARY KEY,
+    setting_value TEXT NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS apple_inventory (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    product_name VARCHAR(128) NOT NULL DEFAULT '사과',
+    size_class VARCHAR(32) NOT NULL,
+    grade VARCHAR(32) NOT NULL,
+    available_kg DECIMAL(12, 3) NOT NULL DEFAULT 0,
+    reserved_kg DECIMAL(12, 3) NOT NULL DEFAULT 0,
+    package_unit VARCHAR(64) NOT NULL,
+    sales_channel VARCHAR(64) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_apple_inventory_product_grade (product_name, size_class, grade)
+);
+
+CREATE TABLE IF NOT EXISTS harvest_events (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    product_name VARCHAR(128) NOT NULL DEFAULT '사과',
+    size_class VARCHAR(32) NOT NULL,
+    quality_grade VARCHAR(32) NOT NULL,
+    estimated_weight_kg DECIMAL(8, 3) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_harvest_events_created_at (created_at),
+    INDEX idx_harvest_events_product_grade (product_name, size_class, quality_grade)
+);
