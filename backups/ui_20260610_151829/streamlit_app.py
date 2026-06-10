@@ -184,28 +184,6 @@ def api_put(path: str, payload: dict):
     return response.json()
 
 
-@st.cache_data(ttl=30)
-def fetch_products() -> list:
-    return api_get("/sales/products")
-
-
-@st.cache_data(ttl=30)
-def fetch_listings() -> list:
-    return api_get("/sales/listings")
-
-
-@st.cache_data(ttl=30)
-def fetch_orders() -> list:
-    return api_get("/sales/orders")
-
-
-def clear_sales_cache() -> None:
-    fetch_products.clear()
-    fetch_listings.clear()
-    fetch_orders.clear()
-
-
-@st.cache_data
 def image_data_uri(path: Path) -> str:
     if not path.exists():
         return ""
@@ -608,13 +586,13 @@ with st.sidebar:
         st.session_state.pop("admin_user", None)
         st.rerun()
     nav_items = [
-        ("대시보드", "📊  대시보드"),
-        ("판매상품등록", "📝  판매상품등록"),
-        ("판매중인상품", "🍎  판매중인상품"),
-        ("AI 도우미", "🤖  AI 도우미"),
-        ("가격 정보 업데이트", "🔄  가격 정보 업데이트"),
-        ("최신 뉴스 업데이트", "📰  최신 뉴스 업데이트"),
-        ("알림", "🔔  알림"),
+        ("대시보드", "▣  대시보드"),
+        ("판매상품등록", "□  판매상품등록"),
+        ("판매중인상품", "▥  판매중인상품"),
+        ("AI 도우미", "◌  AI 도우미"),
+        ("가격 정보 업데이트", "↻  가격 정보 업데이트"),
+        ("최신 뉴스 업데이트", "↻  최신 뉴스 업데이트"),
+        ("알림", "!  알림"),
     ]
     for page_name, label in nav_items:
         if st.button(
@@ -667,18 +645,18 @@ st.markdown(
 )
 
 try:
-    products = fetch_products()
+    products = api_get("/sales/products")
 except requests.RequestException as exc:
     st.error(f"재고 정보를 불러오지 못했습니다: {exc}")
     products = []
 
 try:
-    listings = fetch_listings()
+    listings = api_get("/sales/listings")
 except requests.RequestException:
     listings = []
 
 try:
-    orders = fetch_orders()
+    orders = api_get("/sales/orders")
 except requests.RequestException:
     orders = []
 
@@ -687,7 +665,7 @@ latest_date, doc_status = latest_price_info()
 latest_news_date, news_doc_status = latest_news_info()
 
 if selected_page == "대시보드":
-    st.markdown('<div class="section-label">🍎 크기·품질별 사과 재고</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-label">크기·품질별 사과 재고</div>', unsafe_allow_html=True)
     inventory_cols = st.columns(3)
     for index, product in enumerate(products[:6]):
         with inventory_cols[index % 3]:
@@ -709,7 +687,7 @@ if selected_page == "AI 도우미":
         render_recent_orders(orders)
 
 if selected_page == "판매상품등록":
-    st.markdown('<div class="section-label">📝 판매상품등록</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-label">판매상품등록</div>', unsafe_allow_html=True)
     if products:
         labels = [
             f"{item_name(item)} · 추가 가능 {int(item['available_kg']):,}kg · {format_won(item['recommended_price_per_kg'])}/kg"
@@ -776,14 +754,13 @@ if selected_page == "판매상품등록":
             except requests.RequestException as exc:
                 st.error(f"상품등록 실패: {exc}")
             else:
-                clear_sales_cache()
                 st.success(f"{item_name(listing)} {int(listing['quantity_kg']):,}kg을 판매중인상품에 등록했습니다.")
                 st.rerun()
     else:
         st.info("등록 가능한 재고가 없습니다.")
 
 if selected_page == "판매중인상품":
-    st.markdown('<div class="section-label">🍎 판매중인상품</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-label">판매중인상품</div>', unsafe_allow_html=True)
     if not active_listings:
         st.info("판매 등록된 상품이 아직 없습니다.")
     listing_cols = st.columns(3)
@@ -809,7 +786,7 @@ if selected_page == "판매중인상품":
             )
 
 if selected_page == "가격 정보 업데이트":
-    st.markdown('<div class="section-label">🔄 가격 정보 업데이트</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-label">가격 정보 업데이트</div>', unsafe_allow_html=True)
     price_cols = st.columns(3)
     with price_cols[0]:
         render_metric("최신 관측일", latest_date, "가락시장 CSV 기준")
@@ -837,7 +814,7 @@ if selected_page == "가격 정보 업데이트":
                 st.json(result)
 
 if selected_page == "최신 뉴스 업데이트":
-    st.markdown('<div class="section-label">📰 최신 뉴스 업데이트</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-label">최신 뉴스 업데이트</div>', unsafe_allow_html=True)
     news_cols = st.columns(3)
     with news_cols[0]:
         render_metric("최근 뉴스 문서 업데이트", latest_news_date, "fruit_news_2026.md 기준")
@@ -866,5 +843,5 @@ if selected_page == "최신 뉴스 업데이트":
                 st.json(result)
 
 if selected_page == "알림":
-    st.markdown('<div class="section-label">🔔 농부 알림</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-label">농부 알림</div>', unsafe_allow_html=True)
     render_notifications_panel()

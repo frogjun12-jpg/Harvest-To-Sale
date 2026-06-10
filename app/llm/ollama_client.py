@@ -4,6 +4,7 @@ import re
 import ollama
 
 from app.config import load_app_env
+from app.rag.prompt_builder import SYSTEM_PROMPT
 
 load_app_env()
 
@@ -67,12 +68,7 @@ def build_messages(
     messages = [
         {
             "role": "system",
-            "content": (
-                "당신은 과일 농장, 선별, 가격산정, 판매 업무를 돕는 친절한 한국어 업무 도우미입니다. "
-                "항상 한국어로만 답변하세요. 중국어, 영어, 한자 중심 표현을 사용하지 마세요. "
-                "사용자가 명시적으로 요청하지 않는 한 내부 검색, RAG, 출처, 문서를 언급하지 마세요. "
-                "최근 대화는 사용자의 후속 질문 의도를 이해하는 데만 활용하고, 업무 기준은 현재 질문의 참고 정보를 우선하세요."
-            ),
+            "content": SYSTEM_PROMPT,
         }
     ]
 

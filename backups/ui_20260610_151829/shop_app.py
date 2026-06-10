@@ -225,22 +225,11 @@ def item_name(item: dict) -> str:
     return f"{item['product_name']} {item['size_class']}과 {item['grade']} 등급"
 
 
-@st.cache_data
 def image_data_uri(path: Path) -> str:
     if not path.exists():
         return ""
     encoded = base64.b64encode(path.read_bytes()).decode("ascii")
     return f"data:image/png;base64,{encoded}"
-
-
-@st.cache_data(ttl=30)
-def fetch_active_listings() -> list:
-    return [listing for listing in api_get("/sales/listings") if listing["status"] == "active"]
-
-
-@st.cache_data(ttl=30)
-def fetch_purchase_history(user_id: int, display_name: str) -> list:
-    return api_get(f"/sales/orders/users/{user_id}?customer_name={display_name}")
 
 
 def render_free_sidebar_ad() -> None:
@@ -324,12 +313,14 @@ with page_cols[1]:
 
 if st.session_state.shop_page == "구매기록":
     try:
-        purchase_history = fetch_purchase_history(shop_user["id"], shop_user["display_name"])
+        purchase_history = api_get(
+            f"/sales/orders/users/{shop_user['id']}?customer_name={shop_user['display_name']}"
+        )
     except requests.RequestException as exc:
         st.error(f"구매기록을 불러오지 못했습니다: {exc}")
         purchase_history = []
 
-    st.markdown('<div class="catalog-label">📋 구매기록</div>', unsafe_allow_html=True)
+    st.markdown('<div class="catalog-label">구매기록</div>', unsafe_allow_html=True)
     if not purchase_history:
         st.info("아직 구매기록이 없습니다.")
 
@@ -350,7 +341,7 @@ if st.session_state.shop_page == "구매기록":
         )
     st.stop()
 try:
-    all_listings = fetch_active_listings()
+    all_listings = [listing for listing in api_get("/sales/listings") if listing["status"] == "active"]
 except requests.RequestException as exc:
     st.error(f"상품을 불러오지 못했습니다: {exc}")
     all_listings = []
@@ -360,7 +351,7 @@ if "shop_size_filter" not in st.session_state:
 
 filter_cols = st.columns([0.66, 0.62, 0.62, 0.62, 3.3, 1], gap="small")
 with filter_cols[0]:
-    st.markdown('<div class="catalog-label">🛒 상품목록</div>', unsafe_allow_html=True)
+    st.markdown('<div class="catalog-label">상품목록</div>', unsafe_allow_html=True)
 for col, filter_name in zip(filter_cols[1:4], ["전체", "대과", "중과"]):
     with col:
         if st.button(
@@ -373,7 +364,6 @@ for col, filter_name in zip(filter_cols[1:4], ["전체", "대과", "중과"]):
             st.rerun()
 with filter_cols[5]:
     if st.button("상품 새로고침", use_container_width=True):
-        fetch_active_listings.clear()
         st.rerun()
 
 size_filter = st.session_state.shop_size_filter
@@ -443,7 +433,5 @@ for row_start in range(0, len(listings), 3):
                 except requests.RequestException as exc:
                     st.error(f"주문 처리 실패: {exc}")
                 else:
-                    fetch_active_listings.clear()
-                    fetch_purchase_history.clear()
                     st.success("주문이 접수되었습니다. 농부 알림으로 전달했습니다.")
                     st.rerun()
