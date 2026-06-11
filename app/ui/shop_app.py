@@ -122,11 +122,12 @@ st.markdown(
         position: fixed;
         top: 5.25rem;
         right: 1.15rem;
-        width: 306px;
-        z-index: 50;
+        width: 292px;
+        z-index: 20;
         display: flex;
         flex-direction: column;
         gap: .8rem;
+        pointer-events: none;
     }
     .right-ad-rail img {
         width: 100%;
@@ -137,15 +138,18 @@ st.markdown(
         box-shadow: 0 14px 32px rgba(23,35,29,.16);
         background: #54c6ef;
         display: block;
+        pointer-events: auto;
     }
     @media (min-width: 1500px) {
-        .block-container { padding-right: 342px; }
+        .block-container { padding-right: 328px; }
     }
     @media (max-width: 1499px) {
         .right-ad-rail {
             position: static;
             width: min(100%, 380px);
             margin: 0 0 1rem auto;
+            flex-direction: column;
+            pointer-events: auto;
         }
         .right-ad-rail img {
             max-height: 460px;
@@ -240,6 +244,7 @@ st.markdown(
 )
 
 if ORCHARD_BACKGROUND_URI:
+    content_padding_right = "1.35rem" if IS_PRO_SHOP else "328px"
     st.markdown(
         f"""
         <style>
@@ -254,8 +259,13 @@ if ORCHARD_BACKGROUND_URI:
             border-radius: 10px;
             box-shadow: 0 18px 44px rgba(23,35,29,.12);
             padding-left: 1.35rem;
-            padding-right: 1.35rem;
+            padding-right: {content_padding_right};
             margin-top: .85rem;
+        }}
+        @media (max-width: 1499px) {{
+            .block-container {{
+                padding-right: 1.35rem;
+            }}
         }}
         .market-header,
         .product-card,

@@ -251,14 +251,7 @@ st.markdown(
         display: block;
     }
     .right-ad-rail {
-        position: fixed;
-        top: 5.25rem;
-        right: 1.15rem;
-        width: 306px;
-        z-index: 50;
-        display: flex;
-        flex-direction: column;
-        gap: .8rem;
+        display: none;
     }
     .right-ad-rail img {
         width: 100%;
@@ -269,15 +262,18 @@ st.markdown(
         box-shadow: 0 14px 32px rgba(23,35,29,.16);
         background: #54c6ef;
         display: block;
+        pointer-events: auto;
     }
     @media (min-width: 1500px) {
-        .block-container { padding-right: 342px; }
+        .block-container { padding-right: 1.35rem; }
     }
     @media (max-width: 1499px) {
         .right-ad-rail {
             position: static;
             width: min(100%, 380px);
             margin: 0 0 1rem auto;
+            flex-direction: column;
+            pointer-events: auto;
         }
         .right-ad-rail img {
             max-height: 460px;
@@ -683,23 +679,9 @@ def render_free_right_ad() -> None:
     if IS_PRO_EDITION:
         return
 
-    image_tags = []
     for path in FREE_PROMO_IMAGE_PATHS:
-        image_uri = image_data_uri(path)
-        if image_uri:
-            image_tags.append(f'<img src="{image_uri}" alt="AI campus bootcamp ad">')
-
-    if not image_tags:
-        return
-
-    st.markdown(
-        """
-        <aside class="right-ad-rail">
-          {images}
-        </aside>
-        """.format(images="\n".join(image_tags)),
-        unsafe_allow_html=True,
-    )
+        if path.exists():
+            st.image(str(path), use_container_width=True)
 
 
 def render_notifications_panel() -> None:
@@ -844,8 +826,6 @@ with st.sidebar:
         st.session_state.pop("admin_user", None)
         st.rerun()
 
-render_free_right_ad()
-
 title_image_uri = image_data_uri(ADMIN_TITLE_IMAGE_PATH)
 hero_background_style = (
     f' style="background-image: linear-gradient(90deg, rgba(12,18,14,.80) 0%, rgba(12,18,14,.56) 44%, rgba(255,255,255,.06) 100%), url({title_image_uri});"'
@@ -923,99 +903,109 @@ if selected_page == "대시보드":
     total_available_kg = sum(float(product["available_kg"]) for product in products)
     total_listed_kg = sum(int(product["listed_kg"]) for product in products)
 
-    with st.container(border=True):
-        st.markdown(
-            '<span class="section-shortcuts-marker"></span><div class="panel-title">📊 기능 바로가기</div>',
-            unsafe_allow_html=True,
-        )
-        feature_cards = [
-            (
-                "🤖",
-                "AI 도우미",
-                CHAT_PROVIDER_LABEL,
-                "재고, 시세, 판매 판단을 질문으로 확인합니다.",
-                "AI 도우미",
-            ),
-            (
-                "📝",
-                "판매상품등록",
-                format_kg(total_available_kg),
-                "쇼핑몰에 추가 등록 가능한 재고를 상품으로 올립니다.",
-                "판매상품등록",
-            ),
-            (
-                "🍎",
-                "판매중인상품",
-                f"{len(active_listings)}개",
-                f"현재 쇼핑몰 등록량 {total_listed_kg:,}kg을 확인합니다.",
-                "판매중인상품",
-            ),
-            (
-                "🔄",
-                "가격 정보 업데이트",
-                latest_date,
-                "시세 수집, 예측 문서 생성, RAG 반영을 실행합니다.",
-                "가격 정보 업데이트",
-            ),
-            (
-                "📰",
-                "최신 뉴스 업데이트",
-                latest_news_date,
-                "과일 뉴스를 수집하고 요약 문서로 반영합니다.",
-                "최신 뉴스 업데이트",
-            ),
-            (
-                "🔔",
-                "알림",
-                f"{len(orders)}건",
-                "주문 접수와 판매 등록 알림을 확인합니다.",
-                "알림",
-            ),
-        ]
-        for row_start in range(0, len(feature_cards), 3):
-            card_cols = st.columns(3)
-            for col, card in zip(card_cols, feature_cards[row_start : row_start + 3]):
-                with col:
-                    render_feature_card(*card)
+    if IS_PRO_EDITION:
+        dashboard_columns = [st.container()]
+    else:
+        dashboard_columns = st.columns([4.8, 1.35], gap="large")
 
-    with st.container(border=True):
-        st.markdown(
-            '<span class="section-inventory-marker"></span><div class="panel-title">🍎 재고 요약</div>',
-            unsafe_allow_html=True,
-        )
-        inventory_cols = st.columns(3, gap="medium")
-        for index, product in enumerate(products[:6]):
-            with inventory_cols[index % 3]:
-                render_product_card(product)
+    with dashboard_columns[0]:
+        with st.container(border=True):
+            st.markdown(
+                '<span class="section-shortcuts-marker"></span><div class="panel-title">📊 기능 바로가기</div>',
+                unsafe_allow_html=True,
+            )
+            feature_cards = [
+                (
+                    "🤖",
+                    "AI 도우미",
+                    CHAT_PROVIDER_LABEL,
+                    "재고, 시세, 판매 판단을 질문으로 확인합니다.",
+                    "AI 도우미",
+                ),
+                (
+                    "📝",
+                    "판매상품등록",
+                    format_kg(total_available_kg),
+                    "쇼핑몰에 추가 등록 가능한 재고를 상품으로 올립니다.",
+                    "판매상품등록",
+                ),
+                (
+                    "🍎",
+                    "판매중인상품",
+                    f"{len(active_listings)}개",
+                    f"현재 쇼핑몰 등록량 {total_listed_kg:,}kg을 확인합니다.",
+                    "판매중인상품",
+                ),
+                (
+                    "🔄",
+                    "가격 정보 업데이트",
+                    latest_date,
+                    "시세 수집, 예측 문서 생성, RAG 반영을 실행합니다.",
+                    "가격 정보 업데이트",
+                ),
+                (
+                    "📰",
+                    "최신 뉴스 업데이트",
+                    latest_news_date,
+                    "과일 뉴스를 수집하고 요약 문서로 반영합니다.",
+                    "최신 뉴스 업데이트",
+                ),
+                (
+                    "🔔",
+                    "알림",
+                    f"{len(orders)}건",
+                    "주문 접수와 판매 등록 알림을 확인합니다.",
+                    "알림",
+                ),
+            ]
+            for row_start in range(0, len(feature_cards), 3):
+                card_cols = st.columns(3)
+                for col, card in zip(card_cols, feature_cards[row_start : row_start + 3]):
+                    with col:
+                        render_feature_card(*card)
 
-    with st.container(border=True):
-        st.markdown(
-            '<span class="section-listings-marker"></span><div class="panel-title">🛒 판매중인 상품</div>',
-            unsafe_allow_html=True,
-        )
-        if active_listings:
-            listing_cols = st.columns(3, gap="medium")
-            for index, listing in enumerate(active_listings[:6]):
-                with listing_cols[index % 3]:
-                    total_amount = int(listing["quantity_kg"]) * int(listing["price_per_kg"])
-                    st.markdown(
-                        f"""
-                        <div class="product-card">
-                          <div class="product-title">{html.escape(item_name(listing))}</div>
-                          <div>
-                            <span class="pill">{html.escape(listing['package_unit'])}</span>
-                            <span class="pill">남은 수량 {int(listing['quantity_kg']):,}kg</span>
-                          </div>
-                          <div class="product-meta">
-                            <span class="price">{format_won(listing['price_per_kg'])}/kg</span><br>
-                            판매 가능 금액 {total_amount:,}원
-                          </div>
-                        </div>
-                        """,
-                        unsafe_allow_html=True,
-                    )
-        else:
-            st.markdown('<div class="info-card quiet">판매중인 상품이 없습니다.</div>', unsafe_allow_html=True)
+        with st.container(border=True):
+            st.markdown(
+                '<span class="section-inventory-marker"></span><div class="panel-title">🍎 재고 요약</div>',
+                unsafe_allow_html=True,
+            )
+            inventory_cols = st.columns(3, gap="medium")
+            for index, product in enumerate(products[:6]):
+                with inventory_cols[index % 3]:
+                    render_product_card(product)
+
+        with st.container(border=True):
+            st.markdown(
+                '<span class="section-listings-marker"></span><div class="panel-title">🛒 판매중인 상품</div>',
+                unsafe_allow_html=True,
+            )
+            if active_listings:
+                listing_cols = st.columns(3, gap="medium")
+                for index, listing in enumerate(active_listings[:6]):
+                    with listing_cols[index % 3]:
+                        total_amount = int(listing["quantity_kg"]) * int(listing["price_per_kg"])
+                        st.markdown(
+                            f"""
+                            <div class="product-card">
+                              <div class="product-title">{html.escape(item_name(listing))}</div>
+                              <div>
+                                <span class="pill">{html.escape(listing['package_unit'])}</span>
+                                <span class="pill">남은 수량 {int(listing['quantity_kg']):,}kg</span>
+                              </div>
+                              <div class="product-meta">
+                                <span class="price">{format_won(listing['price_per_kg'])}/kg</span><br>
+                                판매 가능 금액 {total_amount:,}원
+                              </div>
+                            </div>
+                            """,
+                            unsafe_allow_html=True,
+                        )
+            else:
+                st.markdown('<div class="info-card quiet">판매중인 상품이 없습니다.</div>', unsafe_allow_html=True)
+
+    if not IS_PRO_EDITION:
+        with dashboard_columns[1]:
+            render_free_right_ad()
 
 if selected_page == "판매페이지 관리":
     st.markdown('<div class="section-label">🛒 판매페이지 관리</div>', unsafe_allow_html=True)
