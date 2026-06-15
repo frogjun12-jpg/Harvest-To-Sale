@@ -1,0 +1,60 @@
+# Chronos fine-tuning config: chronos_baseline
+
+training_data_paths:
+  - "C:/Users/kccistc1/Desktop/project_code/timeseries/arrow_data/상_w0.arrow"
+  - "C:/Users/kccistc1/Desktop/project_code/timeseries/arrow_data/상_w1.arrow"
+  - "C:/Users/kccistc1/Desktop/project_code/timeseries/arrow_data/상_w2.arrow"
+  - "C:/Users/kccistc1/Desktop/project_code/timeseries/arrow_data/중_w0.arrow"
+  - "C:/Users/kccistc1/Desktop/project_code/timeseries/arrow_data/중_w1.arrow"
+  - "C:/Users/kccistc1/Desktop/project_code/timeseries/arrow_data/중_w2.arrow"
+
+probability:
+  - 0.1667
+  - 0.1667
+  - 0.1667
+  - 0.1667
+  - 0.1667
+  - 0.1667
+
+validation_data_paths:
+  - "./arrow_data/상_w0.arrow"
+  - "./arrow_data/상_w1.arrow"
+  - "./arrow_data/상_w2.arrow"
+  - "./arrow_data/중_w0.arrow"
+  - "./arrow_data/중_w1.arrow"
+  - "./arrow_data/중_w2.arrow"
+
+context_length: 512
+prediction_length: 30
+min_past: 60
+max_steps: 10000
+save_steps: 1000
+log_steps: 50
+
+per_device_train_batch_size: 4
+learning_rate: 1.0e-4
+optim: adamw_torch
+num_samples: 20
+shuffle_buffer_length: 1000
+gradient_accumulation_steps: 4
+
+model_id: "amazon/chronos-t5-mini"
+model_type: seq2seq
+random_init: false
+tie_embeddings: true
+
+output_dir: "./finetuned_model/chronos_baseline"
+
+lr_scheduler_type: linear
+warmup_ratio: 0.1
+dataloader_num_workers: 0
+max_missing_prop: 0.9
+use_eos_token: true
+
+tokenizer_class: "MeanScaleUniformBins"
+tokenizer_kwargs:
+  low_limit: -15.0
+  high_limit: 15.0
+
+torch_compile: false
+report_to: "none"

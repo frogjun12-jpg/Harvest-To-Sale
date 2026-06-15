@@ -1,0 +1,1093 @@
+
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<HTML xmlns="http://www.w3.org/1999/xhtml" xml:lang="ko" lang="ko">
+<head>
+	<title>가격정보 - 친환경농산물 - 품목별 엑셀 출력</title>
+	<meta http-equiv="Content-Type" content="application/vnd.ms-excel;charset=utf-8">
+	<style type="text/css">
+		table caption	{ text-align:left; }
+		table th		{ background-color:#eff2f9; }
+		table td		{ mso-number-format:\@; text-align:general; vertical-align:middle; text-align:center; white-space:nowrap; mso-rotate:0; mso-background-source:auto; mso-pattern:auto; color:black; font-size:11.0pt; font-style:normal; text-decoration:none; font-family:"맑은 고딕", monospace; mso-font-charset:129; border:1px; mso-protection:locked visible; mso-style-name:표준; mso-style-id:0; }
+		table td.c		{ text-align:center;}
+		table td.l		{ text-align:left; }
+		table td.r		{ text-align:right; }
+	</style>
+</head>
+<body>
+	<table>
+		<tr>
+			<td	class="data">
+				<table id="data" border="1px">
+					
+					                    			<caption>소매가격 
+					                    			
+						                    			
+						                    				과일류,
+						                    				
+												           		사과,
+												           	
+												           		후지,
+												           	
+												           	상품,
+												           	10개
+						                    			
+					                    			
+					                    			 정보 - 날짜, 가격, 등락률로 구성</caption>
+					                                <colgroup>
+					                                    <col>
+					                                    <col>
+					                                    <col>
+					                                </colgroup>
+					                                <thead>
+					                                    <tr>
+					                                        <th scope="col" style="position: relative;">날짜<button type="button" class="btn ic sort" onclick="fncSortTbl(this, '#itemTable_1', 'desc');" title="기본 정렬됨"><i class="feather icon-align-justify"></i></button></th>
+					                                        <th scope="col">가격</th>
+					                                        <th scope="col">등락률</th>
+					                                    </tr>
+					                                </thead>
+					                                <tbody>
+					                                	<!-- body 생성 -->
+														
+														
+														
+															<tr>
+																<td>전월 순</td>
+																<td>27,199</td>
+																<td>
+																	
+																	
+																	3.58
+																</td>
+															</tr>
+														
+															<tr>
+																<td>전년 순</td>
+																<td>24,726</td>
+																<td>
+																	
+																	
+																	13.94
+																</td>
+															</tr>
+														
+															<tr>
+																<td>순 평년</td>
+																<td>24,926</td>
+																<td>
+																	
+																	
+																	13.02
+																</td>
+															</tr>
+														
+														
+															<tr>
+																<td><span class="webSeq">20</span>25.03.31</td>
+																<td>28,172</td>
+																<td>
+																	
+																	
+																	1.16
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>25.03.28</td>
+																<td>27,848</td>
+																<td>
+																	
+																	
+																	0.3
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>25.03.27</td>
+																<td>27,766</td>
+																<td>
+																	
+																	
+																	1.32
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>25.03.26</td>
+																<td>27,404</td>
+																<td>
+																	
+																	
+																	-0.31
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>25.03.25</td>
+																<td>27,490</td>
+																<td>
+																	
+																	
+																	-1.52
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>25.03.24</td>
+																<td>27,914</td>
+																<td>
+																	
+																	
+																	-1.41
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>25.03.21</td>
+																<td>28,312</td>
+																<td>
+																	
+																	
+																	-0.62
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>25.03.20</td>
+																<td>28,488</td>
+																<td>
+																	
+																	
+																	5.33
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>25.03.19</td>
+																<td>27,046</td>
+																<td>
+																	
+																	
+																	0
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>25.03.18</td>
+																<td>27,046</td>
+																<td>
+																	
+																	
+																	-0.6
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>25.03.17</td>
+																<td>27,208</td>
+																<td>
+																	
+																	
+																	-0.05
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>25.03.14</td>
+																<td>27,222</td>
+																<td>
+																	
+																	
+																	0.08
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>25.03.13</td>
+																<td>27,200</td>
+																<td>
+																	
+																	
+																	-1.64
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>25.03.12</td>
+																<td>27,654</td>
+																<td>
+																	
+																	
+																	-0.35
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>25.03.11</td>
+																<td>27,750</td>
+																<td>
+																	
+																	
+																	0.56
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>25.03.10</td>
+																<td>27,596</td>
+																<td>
+																	
+																	
+																	0.52
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>25.03.07</td>
+																<td>27,454</td>
+																<td>
+																	
+																	
+																	0.05
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>25.03.06</td>
+																<td>27,440</td>
+																<td>
+																	
+																	
+																	1.14
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>25.03.05</td>
+																<td>27,131</td>
+																<td>
+																	
+																	
+																	-0.29
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>25.03.04</td>
+																<td>27,210</td>
+																<td>
+																	
+																	
+																	0.62
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>25.02.28</td>
+																<td>27,041</td>
+																<td>
+																	
+																	
+																	1.45
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>25.02.27</td>
+																<td>26,655</td>
+																<td>
+																	
+																	
+																	-1.76
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>25.02.26</td>
+																<td>27,132</td>
+																<td>
+																	
+																	
+																	-0.96
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>25.02.25</td>
+																<td>27,394</td>
+																<td>
+																	
+																	
+																	-0.75
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>25.02.24</td>
+																<td>27,602</td>
+																<td>
+																	
+																	
+																	0.85
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>25.02.21</td>
+																<td>27,370</td>
+																<td>
+																	
+																	
+																	0.43
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>25.02.20</td>
+																<td>27,252</td>
+																<td>
+																	
+																	
+																	-0.55
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>25.02.19</td>
+																<td>27,402</td>
+																<td>
+																	
+																	
+																	-0.79
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>25.02.18</td>
+																<td>27,620</td>
+																<td>
+																	
+																	
+																	0.9
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>25.02.17</td>
+																<td>27,374</td>
+																<td>
+																	
+																	
+																	1.6
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>25.02.14</td>
+																<td>26,942</td>
+																<td>
+																	
+																	
+																	-2.02
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>25.02.13</td>
+																<td>27,498</td>
+																<td>
+																	
+																	
+																	-0.95
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>25.02.12</td>
+																<td>27,762</td>
+																<td>
+																	
+																	
+																	-2.04
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>25.02.11</td>
+																<td>28,340</td>
+																<td>
+																	
+																	
+																	-1.6
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>25.02.10</td>
+																<td>28,802</td>
+																<td>
+																	
+																	
+																	-0.79
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>25.02.07</td>
+																<td>29,032</td>
+																<td>
+																	
+																	
+																	-0.11
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>25.02.06</td>
+																<td>29,064</td>
+																<td>
+																	
+																	
+																	-0.88
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>25.02.05</td>
+																<td>29,322</td>
+																<td>
+																	
+																	
+																	-0.97
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>25.02.04</td>
+																<td>29,610</td>
+																<td>
+																	
+																	
+																	0.5
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>25.02.03</td>
+																<td>29,462</td>
+																<td>
+																	
+																	
+																	3.49
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>25.01.31</td>
+																<td>28,468</td>
+																<td>
+																	
+																	
+																	5.94
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>25.01.24</td>
+																<td>26,872</td>
+																<td>
+																	
+																	
+																	0.43
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>25.01.23</td>
+																<td>26,758</td>
+																<td>
+																	
+																	
+																	1.53
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>25.01.22</td>
+																<td>26,354</td>
+																<td>
+																	
+																	
+																	-0.12
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>25.01.21</td>
+																<td>26,386</td>
+																<td>
+																	
+																	
+																	-0.86
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>25.01.20</td>
+																<td>26,616</td>
+																<td>
+																	
+																	
+																	-2.95
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>25.01.17</td>
+																<td>27,426</td>
+																<td>
+																	
+																	
+																	-2.66
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>25.01.16</td>
+																<td>28,176</td>
+																<td>
+																	
+																	
+																	3.27
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>25.01.15</td>
+																<td>27,284</td>
+																<td>
+																	
+																	
+																	1.86
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>25.01.14</td>
+																<td>26,786</td>
+																<td>
+																	
+																	
+																	0.21
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>25.01.13</td>
+																<td>26,730</td>
+																<td>
+																	
+																	
+																	0.23
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>25.01.10</td>
+																<td>26,668</td>
+																<td>
+																	
+																	
+																	2.2
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>25.01.09</td>
+																<td>26,094</td>
+																<td>
+																	
+																	
+																	-3.71
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>25.01.08</td>
+																<td>27,100</td>
+																<td>
+																	
+																	
+																	1.42
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>25.01.07</td>
+																<td>26,720</td>
+																<td>
+																	
+																	
+																	-0.41
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>25.01.06</td>
+																<td>26,829</td>
+																<td>
+																	
+																	
+																	2.18
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>25.01.03</td>
+																<td>26,257</td>
+																<td>
+																	
+																	
+																	-0.29
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>25.01.02</td>
+																<td>26,333</td>
+																<td>
+																	
+																	
+																	-2.4
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>24.12.31</td>
+																<td>26,981</td>
+																<td>
+																	
+																	
+																	0.08
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>24.12.30</td>
+																<td>26,959</td>
+																<td>
+																	
+																	
+																	-0.38
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>24.12.27</td>
+																<td>27,061</td>
+																<td>
+																	
+																	
+																	1.48
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>24.12.26</td>
+																<td>26,667</td>
+																<td>
+																	
+																	
+																	3.63
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>24.12.24</td>
+																<td>25,734</td>
+																<td>
+																	
+																	
+																	-0.38
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>24.12.23</td>
+																<td>25,832</td>
+																<td>
+																	
+																	
+																	0.44
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>24.12.20</td>
+																<td>25,718</td>
+																<td>
+																	
+																	
+																	1.05
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>24.12.19</td>
+																<td>25,450</td>
+																<td>
+																	
+																	
+																	-1.62
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>24.12.18</td>
+																<td>25,869</td>
+																<td>
+																	
+																	
+																	0.74
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>24.12.17</td>
+																<td>25,678</td>
+																<td>
+																	
+																	
+																	-0.33
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>24.12.16</td>
+																<td>25,762</td>
+																<td>
+																	
+																	
+																	-0.76
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>24.12.13</td>
+																<td>25,960</td>
+																<td>
+																	
+																	
+																	-1.73
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>24.12.12</td>
+																<td>26,418</td>
+																<td>
+																	
+																	
+																	0.33
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>24.12.11</td>
+																<td>26,330</td>
+																<td>
+																	
+																	
+																	0.63
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>24.12.10</td>
+																<td>26,166</td>
+																<td>
+																	
+																	
+																	0.35
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>24.12.09</td>
+																<td>26,076</td>
+																<td>
+																	
+																	
+																	0.17
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>24.12.05</td>
+																<td>26,032</td>
+																<td>
+																	
+																	
+																	0.16
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>24.12.04</td>
+																<td>25,990</td>
+																<td>
+																	
+																	
+																	-0.71
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>24.12.03</td>
+																<td>26,176</td>
+																<td>
+																	
+																	
+																	-0.56
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>24.12.02</td>
+																<td>26,324</td>
+																<td>
+																	
+																	
+																	0.28
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>24.11.29</td>
+																<td>26,250</td>
+																<td>
+																	
+																	
+																	0.97
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>24.11.28</td>
+																<td>25,998</td>
+																<td>
+																	
+																	
+																	5.85
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>24.11.27</td>
+																<td>24,561</td>
+																<td>
+																	
+																	
+																	0.83
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>24.11.26</td>
+																<td>24,360</td>
+																<td>
+																	
+																	
+																	0.62
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>24.11.25</td>
+																<td>24,210</td>
+																<td>
+																	
+																	
+																	-0.22
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>24.11.22</td>
+																<td>24,264</td>
+																<td>
+																	
+																	
+																	-2.28
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>24.11.21</td>
+																<td>24,830</td>
+																<td>
+																	
+																	
+																	-1
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>24.11.20</td>
+																<td>25,080</td>
+																<td>
+																	
+																	
+																	0.04
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>24.11.19</td>
+																<td>25,070</td>
+																<td>
+																	
+																	
+																	0.59
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>24.11.18</td>
+																<td>24,924</td>
+																<td>
+																	
+																	
+																	-0.21
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>24.11.15</td>
+																<td>24,976</td>
+																<td>
+																	
+																	
+																	-0.18
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>24.11.14</td>
+																<td>25,020</td>
+																<td>
+																	
+																	
+																	3.44
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>24.11.13</td>
+																<td>24,188</td>
+																<td>
+																	
+																	
+																	0.09
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>24.11.12</td>
+																<td>24,166</td>
+																<td>
+																	
+																	
+																	1.03
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>24.11.11</td>
+																<td>23,920</td>
+																<td>
+																	
+																	
+																	-1.64
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>24.11.08</td>
+																<td>24,320</td>
+																<td>
+																	
+																	
+																	0.93
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>24.11.07</td>
+																<td>24,096</td>
+																<td>
+																	
+																	
+																	-1.81
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>24.11.06</td>
+																<td>24,541</td>
+																<td>
+																	
+																	
+																	-1.21
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>24.11.05</td>
+																<td>24,842</td>
+																<td>
+																	
+																	
+																	-0.71
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>24.11.04</td>
+																<td>25,019</td>
+																<td>
+																	
+																	
+																	1.34
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>24.11.01</td>
+																<td>24,687</td>
+																<td>
+																	
+																	
+																	-9.54
+																</td>
+															</tr>
+														
+															<tr>
+																<td><span class="webSeq">20</span>24.10.31</td>
+																<td>27,291</td>
+																<td>
+																	
+																	
+																	0
+																</td>
+															</tr>
+														
+					                                </tbody>
+					                            
+				</table>
+			</td>
+		</tr>
+	</table>
+</body>
+</html>
