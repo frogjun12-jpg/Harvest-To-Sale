@@ -14,6 +14,7 @@ import cv2
 import ncnn
 import time
 import math
+import os
 import threading
 import psutil
 import requests
@@ -69,7 +70,7 @@ CX = 328.74
 CY = 249.07
 
 # DB 서버 URL
-HARVEST_API_URL = "http://10.10.16.17:8000/robot/harvest"
+HARVEST_API_URL = os.getenv("HARVEST_API_URL", "http://10.10.16.17:8000/robot/harvest")
 
 # 등급 매핑
 GRADE_MAP = {'A': '상', 'B': '중', 'C': '하'}

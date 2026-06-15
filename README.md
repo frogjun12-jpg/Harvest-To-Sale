@@ -77,6 +77,7 @@ app/
   rag/        문서 ingest, embedding, retriever, prompt builder
   ui/         Streamlit 관리자/판매 페이지
 
+HW_control/   ROS2 기반 TurtleBot/로봇팔 수확 제어 코드
 rag_docs/     RAG 지식 문서
 fruits_data/  가격 데이터 원본 및 CSV
 editions/
@@ -183,6 +184,16 @@ Pro Docker 구성에서는 API 컨테이너 시작 시 스키마 초기화와 RA
 ```
 
 재고 조회, 수확 기록 조회처럼 DB에서 바로 답할 수 있는 질문은 FastAPI가 직접 처리하고, 판매 전략·시세 판단·뉴스 요약처럼 추론이 필요한 질문은 RAG 검색 결과를 LLM에 전달합니다.
+
+## 하드웨어 제어 코드
+
+`HW_control/apple_harvest.py`는 ROS2 기반 수확 제어 노드입니다.
+
+- NCNN 객체 탐지 모델로 사과 상태를 탐지
+- ArUco 마커와 depth 카메라를 이용해 정렬 및 3D 좌표 계산
+- MoveIt2와 gripper action으로 로봇팔 수확 동작 수행
+- 품질 등급과 크기 정보를 FastAPI `/robot/harvest` 엔드포인트로 전송
+- `HARVEST_API_URL` 환경변수로 백엔드 서버 주소 변경 가능
 
 ## 가격 예측 리포트
 
