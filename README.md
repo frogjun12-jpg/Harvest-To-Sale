@@ -1,151 +1,115 @@
-# All-in-One Fresh Farm
+# Harvest to sale
 
-AI 기반 과일 수확, 선별, 재고, 시세 예측, 판매 등록, 쇼핑몰 주문 관리를 통합한 농장 운영 MVP 프로젝트입니다.
+수확 로봇이 수집한 사과 품질·수확 데이터를 판매 관리 시스템과 연결하고, RAG 기반 AI 도우미가 재고 조회, 판매 등록, 시세 예측, 뉴스 요약, 판매 전략 판단을 지원하는 스마트 농산물 판매 관리 MVP입니다.
 
-농장 운영자가 대시보드에서 재고와 주문을 확인하고, AI 도우미를 통해 판매 등록과 운영 질문을 처리할 수 있도록 구성했습니다. 고객은 별도 Fresh Farm Market 페이지에서 등록된 과일 상품을 확인하고 주문할 수 있습니다.
+농가 인구 감소와 고령화로 수확 이후의 재고 관리, 온라인 판매 등록, 주문 확인까지 사람이 직접 처리하기 어려워지고 있습니다. 이 프로젝트는 **수확 → 품질 분류 → DB 적재 → AI 판매 판단 → 판매 페이지 등록 → 주문 관리** 흐름을 하나의 서비스로 연결하는 것을 목표로 합니다.
 
 ## 주요 기능
 
-- FastAPI 기반 백엔드 API
-- MariaDB 운영 DB
-- MariaDB Vector 기반 RAG 검색
-- `rag_docs/` Markdown 문서 기반 RAG
-- 문서 chunking, embedding 생성, MariaDB 저장
-- 사용자 질문 embedding 후 관련 문서 검색
-- 검색 문서와 질문을 조합한 프롬프트 생성
-- 무료 버전: Ollama 로컬 Qwen 모델 사용
-- Pro 버전: OpenAI GPT API 사용
-- Streamlit 관리자 대시보드
-- Streamlit Apple Market 쇼핑몰 페이지
-- 재고, 판매상품, 주문, 구매이력, 알림 관리
-- 가격 정보 업데이트, 뉴스 업데이트
-- Chronos mini 기반 사과 시세 예측 문서 생성
+- TurtleBot/로봇팔 수확 결과를 FastAPI로 수신하고 DB에 저장
+- 사과 크기와 품질 등급 기준 재고 관리
+- 관리자 대시보드에서 재고, 판매 상품, 주문, 알림 확인
+- 판매자 페이지에서 상품 필터링, 주문 수량 조절, 구매 기록 조회
+- RAG 문서 기반 AI 도우미
+- 가락시장 사과 가격 데이터 기반 시계열 예측 리포트 생성
+- Google News RSS 기반 과일 수급·가격 뉴스 요약 문서 생성
+- MariaDB Vector Search 기반 문서 검색
+- Basic(Local LLM) / Pro(Server-Based LLM) 이중 구성
+- Docker Compose 기반 컨테이너 배포 구조
+
+## 시스템 구조
+
+```mermaid
+flowchart LR
+    Robot["TurtleBot / Robot Arm"] --> API["FastAPI"]
+    Admin["Admin Dashboard"] --> API
+    Shop["Apple Market"] --> API
+
+    API --> DB["MariaDB<br/>Inventory / Orders / Harvest"]
+    API --> RAG["RAG Retriever"]
+    RAG --> VDB["MariaDB Vector Search<br/>rag_documents"]
+    RAG --> LLM["LLM"]
+    LLM --> API
+
+    Docs["rag_docs<br/>price forecast / news / suppliers"] --> Embed["Embedding"]
+    Embed --> VDB
+```
+
+RAG 문서는 `rag_docs/`의 Markdown 파일을 chunk 단위로 분할한 뒤 임베딩 벡터로 변환하여 MariaDB의 `rag_documents` 테이블에 저장합니다. 사용자의 질문도 임베딩한 뒤 `VEC_DISTANCE_COSINE()` 기반 Vector Search로 관련 문서를 찾고, 검색 결과를 LLM 프롬프트에 포함해 답변을 생성합니다.
+
+## Basic vs Pro
+
+| 구분 | Basic version | Pro version |
+|---|---|---|
+| LLM | Local LLM | Server-Based LLM |
+| 답변 모델 | Ollama Qwen 2.5 | GPT-4o mini |
+| 임베딩 | bge-m3 | OpenAI Embedding |
+| DB | MariaDB | MariaDB Container |
+| 실행 방식 | 로컬 PC / Docker Compose | Docker Compose |
+| 장점 | 데이터 외부 전송 최소화, 네트워크 독립성, API 비용 절감 | 높은 응답 품질, 빠른 응답, 모델 교체와 확장 용이 |
+
+Basic은 로컬 PC에서 실행 가능한 구조이고, Pro는 OpenAI API를 사용해 답변 품질과 확장성을 높인 구조입니다. 두 버전 모두 같은 애플리케이션 코드와 RAG 문서 구조를 공유합니다.
+
+## 기술 스택
+
+| 영역 | 기술 |
+|---|---|
+| Backend | FastAPI |
+| Frontend | Streamlit |
+| Database | MariaDB 11.8 |
+| Vector Search | MariaDB Vector, `VECTOR`, `VEC_DISTANCE_COSINE()` |
+| RAG | Markdown chunking, embedding, vector retrieval |
+| Local LLM | Ollama, Qwen 2.5 |
+| Pro LLM | OpenAI GPT-4o mini |
+| Embedding | bge-m3, text-embedding-3-small |
+| Price Forecast | Chronos mini |
+| Deploy | Docker Desktop, Docker Compose |
 
 ## 프로젝트 구조
 
 ```text
-app/                  # 무료/Pro 공용 애플리케이션 코드
-  api/                # FastAPI 라우터
-  db/                 # DB 연결, 스키마, 판매/인증/메모리 관리
-  llm/                # Ollama/OpenAI 호출
-  news/               # 과일 뉴스 수집/요약
-  prices/             # 가격 데이터 수집
-  rag/                # 문서 ingest, embedding, 검색, 프롬프트
-  ui/                 # Streamlit 관리자/마켓 UI
+app/
+  api/        FastAPI 라우터
+  db/         MariaDB 연결, 스키마, 재고/판매/인증/벡터 검색
+  llm/        Ollama/OpenAI 호출 로직
+  news/       뉴스 수집 및 RAG 문서 갱신
+  prices/     가락시장 가격 데이터 수집 및 예측 문서 갱신
+  rag/        문서 ingest, embedding, retriever, prompt builder
+  ui/         Streamlit 관리자/판매 페이지
 
-rag_docs/             # 무료/Pro 공용 RAG 문서
-fruits_data/          # 사과 시세 원본 데이터
-reviews/              # 코드 리뷰용 문서
-
+rag_docs/     RAG 지식 문서
+fruits_data/  가격 데이터 원본 및 CSV
 editions/
-  free/               # 무료 로컬 버전 설정
-    .env.example
-    README_FREE.md
-
-  pro/                # Pro 서버/Docker 버전 설정
-    .env.pro.example
-    Dockerfile
-    docker-compose.pro.yml
-    requirements-pro.txt
-    README_PRO.md
-
-requirements.txt      # 무료 로컬 버전 패키지
-README.md             # 전체 프로젝트 설명
+  free/       Basic Docker 구성
+  pro/        Pro Docker 구성
+reviews/      LLM 평가 결과 및 리뷰 문서
+scripts/      실행, 벤치마크, 이미지 생성 보조 스크립트
+output/       발표/README용 산출 이미지
 ```
 
-## 무료 버전과 Pro 버전 차이
+## 실행 방법
 
-무료 버전은 PC 또는 엣지 장비에서 로컬로 실행하는 구조입니다.
+### 1. Basic version 실행
 
-```text
-Streamlit UI
--> FastAPI
--> MariaDB
--> Ollama Qwen
--> Ollama embedding 모델
-```
-
-Pro 버전은 서버나 클라우드 배포를 고려한 구조입니다.
-
-```text
-Streamlit UI 컨테이너
--> FastAPI 컨테이너
--> MariaDB 컨테이너
--> OpenAI GPT API
--> OpenAI embedding API
-```
-
-현재 Pro 버전도 `rag_docs/`와 `fruits_data/`를 공용으로 사용합니다. Docker 빌드 시 해당 폴더를 컨테이너 안으로 복사하고, API 컨테이너가 시작될 때 `rag_docs/` 문서를 OpenAI embedding으로 MariaDB에 다시 적재합니다.
-
-즉, 문서 소스는 공용이고 AI 처리 방식이 다릅니다.
-
-```text
-무료: rag_docs -> Ollama embedding -> MariaDB -> Ollama Qwen 답변
-Pro:  rag_docs -> OpenAI embedding -> Docker MariaDB -> GPT API 답변
-```
-
-## 무료 로컬 버전 실행
-
-프로젝트 루트에서 실행합니다.
+Basic Docker 구성은 FastAPI, MariaDB, 관리자 페이지, 판매 페이지를 컨테이너로 실행합니다. Ollama는 호스트 PC에서 실행되어야 합니다.
 
 ```powershell
-python -m venv .venv
-.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
 Copy-Item editions\free\.env.example .env
-```
-
-`.env`에서 MariaDB, Ollama, 모델명을 설정합니다.
-
-```env
-MARIADB_HOST=localhost
-MARIADB_PORT=3306
-MARIADB_USER=rag_user
-MARIADB_PASSWORD=rag_password
-MARIADB_DATABASE=fruits_rag
-
-OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_CHAT_MODEL=qwen2.5:7b
-OLLAMA_EMBEDDING_MODEL=bge-m3
-
-LLM_PROVIDER=ollama
-EMBEDDING_PROVIDER=ollama
-CHAT_API_URL=http://localhost:8000/chat
-```
-
-DB 스키마와 RAG 문서를 준비합니다.
-
-```powershell
-python -m app.db.init_schema
-python -m app.rag.ingest_docs
-```
-
-서버와 화면을 실행합니다.
-
-```powershell
-python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
-python -m streamlit run app/ui/streamlit_app.py --server.port 8501
-python -m streamlit run app/ui/shop_app.py --server.port 8502
+$env:FREE_API_PORT='8001'
+docker compose --env-file .env -f editions/free/docker-compose.free.yml up -d --build
 ```
 
 접속 주소:
 
 ```text
-관리자 대시보드: http://localhost:8501
-Apple Market:    http://localhost:8502
-FastAPI:         http://localhost:8000/health
+Basic Admin: http://127.0.0.1:8501
+Basic Shop:  http://127.0.0.1:8502
+Basic API:   http://127.0.0.1:8001/health
 ```
 
-기본 계정:
+### 2. Pro version 실행
 
-```text
-관리자: admin / admin1234
-고객:   customer / customer1234
-```
-
-## Pro Docker 버전 실행
-
-Pro 버전은 Docker Compose로 실행합니다.
+Pro 버전은 OpenAI API 키가 필요합니다.
 
 ```powershell
 Copy-Item editions\pro\.env.pro.example editions\pro\.env.pro
@@ -157,126 +121,120 @@ Copy-Item editions\pro\.env.pro.example editions\pro\.env.pro
 OPENAI_API_KEY=...
 OPENAI_CHAT_MODEL=gpt-4o-mini
 OPENAI_EMBEDDING_MODEL=text-embedding-3-small
-
-MARIADB_USER=pro_rag_user
-MARIADB_PASSWORD=change-this-password
-MARIADB_DATABASE=fruits_rag_pro
-MARIADB_ROOT_PASSWORD=change-this-root-password
 ```
 
-Docker Compose 실행:
+실행:
 
 ```powershell
 docker compose --env-file editions/pro/.env.pro -f editions/pro/docker-compose.pro.yml up -d --build
 ```
 
-상태 확인:
-
-```powershell
-docker compose --env-file editions/pro/.env.pro -f editions/pro/docker-compose.pro.yml ps
-docker compose --env-file editions/pro/.env.pro -f editions/pro/docker-compose.pro.yml logs -f api
-```
-
 접속 주소:
 
 ```text
-관리자 Pro: http://localhost:8601
-Apple Market Pro: http://localhost:8602
-FastAPI: http://localhost:8000/health
+Pro Admin: http://127.0.0.1:8601
+Pro Shop:  http://127.0.0.1:8602
+Pro API:   http://127.0.0.1:8000/health
 ```
 
-기본 계정:
-
-```text
-관리자 Pro: adminpro / adminpro1234
-고객 Pro:   customerpro / customerpro1234
-```
-
-Docker 종료:
+### 3. 컨테이너 상태 확인
 
 ```powershell
-docker compose --env-file editions/pro/.env.pro -f editions/pro/docker-compose.pro.yml down
+docker ps
+docker compose --env-file editions/pro/.env.pro -f editions/pro/docker-compose.pro.yml logs -f api
 ```
 
-## 외부 접속과 배포
+## 기본 계정
 
-현재 PC에서 Docker Desktop으로 실행하면 기본적으로 내 PC가 서버 역할을 합니다.
+| 버전 | 역할 | ID | Password |
+|---|---|---|---|
+| Basic | 관리자 | `admin` | `admin1234` |
+| Basic | 고객 | `customer` | `customer1234` |
+| Pro | 관리자 | `adminpro` | `adminpro1234` |
+| Pro | 고객 | `customerpro` | `customerpro1234` |
 
-같은 내부망에서 접속하려면 PC의 내부 IP와 포트를 사용합니다.
+## RAG 지식 베이스
 
-```text
-http://PC_IP:8601
-http://PC_IP:8602
-```
+현재 RAG는 다음 문서를 기반으로 구성됩니다.
 
-학교나 기관망에서는 방화벽 정책 때문에 외부 기기 접속이 막힐 수 있습니다. 이 경우 Cloudflare Tunnel, ngrok, Oracle Cloud 같은 서버 배포 방식이 필요합니다.
+- `rag_docs/apple_price_forecast_chronos_mini.md`
+- `rag_docs/fruit_news_2026.md`
+- `rag_docs/fruit_suppliers.md`
+- `rag_docs/fruit_price_inventory_sales.md`
+- `rag_docs/sample_fruit_policy.md`
 
-클라우드 서버에 올릴 때는 Pro Docker 구성을 그대로 사용할 수 있습니다. 서버 방화벽에서 `8000`, `8601`, `8602` 포트를 열고, 실제 운영에서는 HTTPS와 도메인을 붙이는 것이 좋습니다.
-
-## RAG 문서 관리
-
-RAG 문서는 `rag_docs/` 폴더의 Markdown 파일을 사용합니다.
-
-문서를 추가하거나 수정한 뒤 다시 적재합니다.
+문서 갱신 후 재적재:
 
 ```powershell
 python -m app.rag.ingest_docs
 ```
 
-Pro Docker에서는 컨테이너 시작 시 자동으로 문서를 적재합니다.
+Pro Docker 구성에서는 API 컨테이너 시작 시 스키마 초기화와 RAG 문서 적재가 자동으로 실행됩니다.
 
-주의할 점:
+## AI 도우미 흐름
 
-- 무료 버전과 Pro 버전은 같은 `rag_docs/`를 사용합니다.
-- 무료 버전은 Ollama embedding 차원을 사용합니다.
-- Pro 버전은 OpenAI embedding 차원인 `1536`을 사용합니다.
-- embedding 차원이 바뀌면 `rag_documents` 테이블을 재생성해야 합니다.
+```text
+사용자 질문
+→ 질문 임베딩
+→ MariaDB Vector Search로 관련 RAG chunk 검색
+→ 검색 결과와 질문을 조합해 프롬프트 생성
+→ LLM 답변 생성
+→ 관리자 대시보드에 응답 표시
+```
 
-## 가격 정보와 뉴스 업데이트
+재고 조회, 수확 기록 조회처럼 DB에서 바로 답할 수 있는 질문은 FastAPI가 직접 처리하고, 판매 전략·시세 판단·뉴스 요약처럼 추론이 필요한 질문은 RAG 검색 결과를 LLM에 전달합니다.
 
-가격 정보 업데이트와 뉴스 업데이트는 FastAPI와 관리자 화면에서 사용할 수 있도록 구성했습니다.
+## 가격 예측 리포트
+
+가격 예측 리포트는 LLM의 판매 적정 시기 판단을 돕기 위한 보조 지식입니다.
+
+- 가락시장 사과 거래 가격 데이터 수집
+- Chronos mini 기반 시계열 예측
+- 예측 결과를 Markdown 문서로 생성
+- 생성된 문서를 RAG에 적재
 
 관련 코드:
 
 ```text
-app/prices/
-app/news/
-app/api/prices.py
-app/api/news.py
+app/prices/garak_crawler.py
+app/rag/generate_apple_forecast_doc.py
+app/prices/refresh.py
 ```
 
-뉴스는 원문을 그대로 RAG에 넣기보다 요약해서 `rag_docs/fruit_news_2026.md`에 반영하는 방향으로 구성했습니다.
+## LLM 성능 평가
 
-## 로봇 연동 방향
+LLM 답변 평가는 단순 DB 조회성 질문을 제외하고, 실제 LLM이 개입하는 질문 100개를 기준으로 수행했습니다.
 
-터틀봇이나 로봇팔이 수확/선별 결과를 FastAPI로 전달하면 DB 재고에 반영할 수 있습니다.
+| 지표 | Basic Local | Pro OpenAI |
+|---|---:|---:|
+| 답변 관련성 | 0.927 | 0.983 |
+| 충실도 | 0.872 | 0.903 |
+| 환각률 | 0.034 | 0.020 |
+| 한국어 품질 | 0.965 | 1.000 |
+| 평균 응답 시간 | 5.05초 | 3.19초 |
+| LLM 답변 품질 점수 | 0.932 | 0.967 |
 
-예상 입력 데이터:
+평가 결과는 두 모델 모두 실사용 가능한 수준이었고, Pro 버전이 답변 품질과 응답 시간에서 더 우세했습니다.
 
-```text
-수확 시간
-사과 크기: 대과 / 중과
-품질 등급: 상 / 중 / 하
-수확 개수
-추정 중량
-결함 여부
-장비 ID
-```
+## Docker 기반 배포 전략
 
-현재는 더미 재고와 판매 흐름을 기반으로 MVP를 구성했고, 이후 로봇팔 코드에서 수확 결과를 API로 보내는 방식으로 확장할 수 있습니다.
+초기 개발 단계에서는 클라우드 서버 비용 부담으로 인해 Docker Desktop이 설치된 로컬 PC를 임시 서버로 활용했습니다. Docker Compose를 통해 FastAPI, MariaDB, Streamlit 관리자 페이지, 판매 페이지를 독립 컨테이너로 분리했기 때문에 같은 네트워크 안에서는 PC IP로 접속할 수 있습니다.
 
-## 정리
+추후 AWS, GCP, Oracle Cloud 같은 클라우드 서버를 확보하면 현재 컨테이너 구조를 그대로 이전해 외부 서비스로 확장할 수 있습니다.
 
-이 프로젝트는 현재 두 가지 방식으로 설명할 수 있습니다.
+## 차별성
 
-무료 버전:
+- 자동 수확 로봇 데이터와 판매 관리 시스템을 하나의 파이프라인으로 연결
+- 수확된 사과를 개별 단위로 기록하고 FIFO 기반 재고 관리
+- 판매 상품 등록, 주문, 구매 기록까지 웹 페이지에서 처리
+- RAG 기반 AI 도우미로 시세·뉴스·판매 전략 판단 지원
+- 별도 벡터 DB 없이 MariaDB에서 정형 데이터와 벡터 검색을 함께 처리
+- Basic/Pro 버전으로 로컬 운영과 서버 기반 LLM 운영을 모두 지원
 
-```text
-농장 PC 또는 엣지 장비에서 로컬 LLM과 로컬 DB로 작동하는 오프라인 지향 시스템
-```
+## 향후 계획
 
-Pro 버전:
+- 클라우드 서버 배포 및 외부 접속 확장
+- 실제 농가 데이터 기반 가격 예측 및 판매 전략 모델 고도화
+- 자동 수확 로봇과 판매 등록 흐름의 실시간 연동 강화
+- 농가 사용자를 위한 UI/UX 디자인 개선
 
-```text
-Docker와 GPT API를 사용해 서버 또는 클라우드에 배포 가능한 농산물 재고/판매 관리 시스템
-```

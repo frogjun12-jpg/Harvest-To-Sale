@@ -39,7 +39,7 @@ services:
       mariadb:
         condition: service_healthy
     ports:
-      - "8000:8000"
+      - "${FREE_API_PORT:-8000}:8000"
     command: >
       sh -c "python -m app.db.init_schema &&
              python -m app.rag.ingest_docs &&

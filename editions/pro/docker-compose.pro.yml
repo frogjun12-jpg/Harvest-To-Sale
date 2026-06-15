@@ -53,7 +53,7 @@ services:
     environment:
       APP_ENV_FILE: .env.pro
       APP_EDITION: pro
-      ADMIN_PAGE_TITLE: Manage Apple Pro
+      ADMIN_PAGE_TITLE: Harvest to sale
       ADMIN_LOGIN_DEFAULT_USERNAME: adminpro
       ADMIN_REQUIRED_ROLE: admin_pro
       CHAT_LLM_PROVIDER: openai
@@ -81,7 +81,7 @@ services:
     environment:
       APP_ENV_FILE: .env.pro
       SHOP_EDITION: pro
-      SHOP_PAGE_TITLE: Apple Market Pro
+      SHOP_PAGE_TITLE: Harvest to sale
       SHOP_LOGIN_DEFAULT_USERNAME: customerpro
       SHOP_REQUIRED_ROLE: customer_pro
       CHAT_API_URL: http://api:8000/chat

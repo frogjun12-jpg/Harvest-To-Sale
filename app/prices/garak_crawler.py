@@ -13,6 +13,7 @@ OUTPUT_PATH = DATA_DIR / "garak_apple_prices.csv"
 
 GARAKPRICE_URL = "https://www.garakprice.com/pum_detail.php"
 DEFAULT_PUM_CD = os.getenv("GARAKPRICE_APPLE_PUM_CD", "41130")
+DEFAULT_START_YEAR = int(os.getenv("GARAKPRICE_START_YEAR", "2020"))
 DEFAULT_YEAR = int(os.getenv("GARAKPRICE_YEAR", str(date.today().year)))
 DEFAULT_END_MONTH = int(os.getenv("GARAKPRICE_END_MONTH", str(date.today().month)))
 
@@ -150,15 +151,19 @@ def parse_price_rows(html: str, fallback_year: int) -> list[dict]:
 
 
 def crawl_garak_apple_prices(
+    start_year: int = DEFAULT_START_YEAR,
     year: int = DEFAULT_YEAR,
     start_month: int = 1,
     end_month: int = DEFAULT_END_MONTH,
     pum_cd: str = DEFAULT_PUM_CD,
 ) -> pd.DataFrame:
     all_rows: list[dict] = []
-    for month in range(start_month, end_month + 1):
-        html = fetch_month(year, month, pum_cd)
-        all_rows.extend(parse_price_rows(html, year))
+    for target_year in range(start_year, year + 1):
+        first_month = start_month if target_year == start_year else 1
+        last_month = end_month if target_year == year else 12
+        for month in range(first_month, last_month + 1):
+            html = fetch_month(target_year, month, pum_cd)
+            all_rows.extend(parse_price_rows(html, target_year))
 
     if not all_rows:
         raise ValueError("No apple price rows were parsed from garakprice.com")

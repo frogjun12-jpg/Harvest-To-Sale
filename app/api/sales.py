@@ -231,7 +231,7 @@ def read_notification(notification_id: int) -> Notification:
 
 @router.get("/settings/shop", response_model=ShopSettings)
 def shop_settings() -> ShopSettings:
-    title = get_app_setting("shop_page_title", "Apple Market")
+    title = get_app_setting("shop_page_title", "Harvest to sale")
     return ShopSettings(shop_page_title=title)
 
 

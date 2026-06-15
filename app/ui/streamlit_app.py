@@ -7,6 +7,7 @@ from pathlib import Path
 
 import requests
 import streamlit as st
+import streamlit.components.v1 as components
 
 from app.config import load_app_env
 
@@ -28,7 +29,7 @@ FREE_PROMO_IMAGE_PATHS = (
 )
 APP_EDITION = os.getenv("APP_EDITION", "free").strip().lower()
 IS_PRO_EDITION = APP_EDITION == "pro"
-ADMIN_PAGE_TITLE = os.getenv("ADMIN_PAGE_TITLE", "Manage Apple Pro" if IS_PRO_EDITION else "Manage Apple")
+ADMIN_PAGE_TITLE = os.getenv("ADMIN_PAGE_TITLE", "Harvest to sale")
 ADMIN_LOGIN_DEFAULT_USERNAME = os.getenv(
     "ADMIN_LOGIN_DEFAULT_USERNAME",
     os.getenv("APP_ADMIN_PRO_USERNAME", "adminpro") if IS_PRO_EDITION else os.getenv("APP_ADMIN_USERNAME", "admin"),
@@ -36,6 +37,7 @@ ADMIN_LOGIN_DEFAULT_USERNAME = os.getenv(
 ADMIN_REQUIRED_ROLE = os.getenv("ADMIN_REQUIRED_ROLE", "admin_pro" if IS_PRO_EDITION else "admin")
 CHAT_LLM_PROVIDER = os.getenv("CHAT_LLM_PROVIDER", "openai" if IS_PRO_EDITION else "ollama")
 CHAT_PROVIDER_LABEL = "GPT API" if CHAT_LLM_PROVIDER == "openai" else "Local Ollama"
+ADMIN_AUTO_REFRESH_SECONDS = int(os.getenv("ADMIN_AUTO_REFRESH_SECONDS", "10"))
 ORCHARD_BACKGROUND_URI = ""
 if ORCHARD_BACKGROUND_IMAGE_PATH.exists():
     ORCHARD_BACKGROUND_URI = (
@@ -350,7 +352,7 @@ def fetch_shop_settings() -> dict:
     try:
         return api_get("/sales/settings/shop")
     except requests.RequestException:
-        return {"shop_page_title": "Apple Market"}
+        return {"shop_page_title": "Harvest to sale"}
 
 
 @st.cache_data(ttl=30)
@@ -879,6 +881,18 @@ if ORCHARD_BACKGROUND_URI:
         unsafe_allow_html=True,
     )
 
+if selected_page == nav_items[0][0] and ADMIN_AUTO_REFRESH_SECONDS > 0:
+    components.html(
+        f"""
+        <script>
+        window.setTimeout(function() {{
+            window.parent.location.reload();
+        }}, {ADMIN_AUTO_REFRESH_SECONDS * 1000});
+        </script>
+        """,
+        height=0,
+    )
+
 try:
     products = fetch_products()
 except requests.RequestException as exc:
@@ -1010,7 +1024,7 @@ if selected_page == "대시보드":
 if selected_page == "판매페이지 관리":
     st.markdown('<div class="section-label">🛒 판매페이지 관리</div>', unsafe_allow_html=True)
     settings = fetch_shop_settings()
-    current_title = settings.get("shop_page_title", "Apple Market")
+    current_title = settings.get("shop_page_title", "Harvest to sale")
 
     with st.container(border=True):
         shop_page_title = st.text_input(

@@ -1,0 +1,37 @@
+﻿target,provider,category,run,elapsed_sec,status,source_count,answer_length,error,question
+Free-Ollama,ollama,direct_db_inventory,1,0.622,ok,1,701,,현재 재고현황을 크기와 등급별로 알려줘
+Free-Ollama,ollama,direct_db_inventory,2,0.138,ok,1,701,,현재 재고현황을 크기와 등급별로 알려줘
+Free-Ollama,ollama,direct_db_inventory,3,0.135,ok,1,701,,현재 재고현황을 크기와 등급별로 알려줘
+Free-Ollama,ollama,direct_db_harvest,1,0.105,ok,1,397,,오늘 로봇이 수확한 사과 기록을 알려줘
+Free-Ollama,ollama,direct_db_harvest,2,0.088,ok,1,397,,오늘 로봇이 수확한 사과 기록을 알려줘
+Free-Ollama,ollama,direct_db_harvest,3,0.104,ok,1,397,,오늘 로봇이 수확한 사과 기록을 알려줘
+Free-Ollama,ollama,rag_price,1,7.223,ok,4,114,,현재 사과 시세를 알려줘
+Free-Ollama,ollama,rag_price,2,3.434,ok,4,202,,현재 사과 시세를 알려줘
+Free-Ollama,ollama,rag_price,3,2.417,ok,4,128,,현재 사과 시세를 알려줘
+Free-Ollama,ollama,rag_news,1,5.656,ok,4,235,,최근 과일 뉴스 중 판매 판단에 영향 있는 내용만 요약해줘
+Free-Ollama,ollama,rag_news,2,5.264,ok,4,287,,최근 과일 뉴스 중 판매 판단에 영향 있는 내용만 요약해줘
+Free-Ollama,ollama,rag_news,3,7.143,ok,4,62,,최근 과일 뉴스 중 판매 판단에 영향 있는 내용만 요약해줘
+Free-Ollama,ollama,rag_decision,1,6.767,ok,4,417,,시세 예측과 뉴스를 고려하면 지금 사과를 팔아야 할까?
+Free-Ollama,ollama,rag_decision,2,4.835,ok,4,349,,시세 예측과 뉴스를 고려하면 지금 사과를 팔아야 할까?
+Free-Ollama,ollama,rag_decision,3,2.755,ok,4,182,,시세 예측과 뉴스를 고려하면 지금 사과를 팔아야 할까?
+Free-Ollama,ollama,unknown_safe_answer,1,2.383,ok,2,134,,바나나 수입 관세율을 알려줘
+Free-Ollama,ollama,unknown_safe_answer,2,2.458,ok,2,163,,바나나 수입 관세율을 알려줘
+Free-Ollama,ollama,unknown_safe_answer,3,1.59,ok,2,99,,바나나 수입 관세율을 알려줘
+Pro-OpenAI,openai,direct_db_inventory,1,0.232,ok,1,723,,현재 재고현황을 크기와 등급별로 알려줘
+Pro-OpenAI,openai,direct_db_inventory,2,0.18,ok,1,723,,현재 재고현황을 크기와 등급별로 알려줘
+Pro-OpenAI,openai,direct_db_inventory,3,0.161,ok,1,723,,현재 재고현황을 크기와 등급별로 알려줘
+Pro-OpenAI,openai,direct_db_harvest,1,0.084,ok,1,25,,오늘 로봇이 수확한 사과 기록을 알려줘
+Pro-OpenAI,openai,direct_db_harvest,2,0.095,ok,1,25,,오늘 로봇이 수확한 사과 기록을 알려줘
+Pro-OpenAI,openai,direct_db_harvest,3,0.079,ok,1,25,,오늘 로봇이 수확한 사과 기록을 알려줘
+Pro-OpenAI,openai,rag_price,1,8.136,ok,4,156,,현재 사과 시세를 알려줘
+Pro-OpenAI,openai,rag_price,2,2.795,ok,4,156,,현재 사과 시세를 알려줘
+Pro-OpenAI,openai,rag_price,3,3.597,ok,4,187,,현재 사과 시세를 알려줘
+Pro-OpenAI,openai,rag_news,1,3.607,ok,3,214,,최근 과일 뉴스 중 판매 판단에 영향 있는 내용만 요약해줘
+Pro-OpenAI,openai,rag_news,2,4.424,ok,3,328,,최근 과일 뉴스 중 판매 판단에 영향 있는 내용만 요약해줘
+Pro-OpenAI,openai,rag_news,3,3.332,ok,3,263,,최근 과일 뉴스 중 판매 판단에 영향 있는 내용만 요약해줘
+Pro-OpenAI,openai,rag_decision,1,2.112,ok,4,146,,시세 예측과 뉴스를 고려하면 지금 사과를 팔아야 할까?
+Pro-OpenAI,openai,rag_decision,2,2.18,ok,4,172,,시세 예측과 뉴스를 고려하면 지금 사과를 팔아야 할까?
+Pro-OpenAI,openai,rag_decision,3,1.312,ok,4,92,,시세 예측과 뉴스를 고려하면 지금 사과를 팔아야 할까?
+Pro-OpenAI,openai,unknown_safe_answer,1,1.642,ok,0,91,,바나나 수입 관세율을 알려줘
+Pro-OpenAI,openai,unknown_safe_answer,2,1.369,ok,0,93,,바나나 수입 관세율을 알려줘
+Pro-OpenAI,openai,unknown_safe_answer,3,1.718,ok,0,91,,바나나 수입 관세율을 알려줘

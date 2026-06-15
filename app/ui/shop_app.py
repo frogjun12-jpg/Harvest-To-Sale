@@ -30,7 +30,7 @@ PRODUCT_IMAGE_PATHS = {
 }
 SHOP_EDITION = os.getenv("SHOP_EDITION", "free").strip().lower()
 IS_PRO_SHOP = SHOP_EDITION == "pro"
-DEFAULT_SHOP_PAGE_TITLE = os.getenv("SHOP_PAGE_TITLE", "Apple Market Pro" if IS_PRO_SHOP else "Apple Market")
+DEFAULT_SHOP_PAGE_TITLE = os.getenv("SHOP_PAGE_TITLE", "Harvest to sale")
 SHOP_PAGE_TITLE = DEFAULT_SHOP_PAGE_TITLE
 SHOP_LOGIN_DEFAULT_USERNAME = os.getenv(
     "SHOP_LOGIN_DEFAULT_USERNAME",

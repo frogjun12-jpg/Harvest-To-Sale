@@ -1,0 +1,92 @@
+{
+  "eval_model": "gpt-4o-mini",
+  "target": "http://127.0.0.1:8000/chat",
+  "average": {
+    "answer_relevancy": 0.833,
+    "faithfulness": 0.8,
+    "context_relevance": 0.833,
+    "hallucination_rate": 0.033,
+    "korean_quality": 0.967,
+    "response_time_sec": 1.66
+  },
+  "rows": [
+    {
+      "no": 1,
+      "question": "현재 사과 시세를 알려줘",
+      "answer": "현재 사과 시세는 다음과 같습니다:\n\n- 대과 상: 7,700원/kg\n- 대과 중: 6,900원/kg\n- 대과 하: 5,600원/kg\n- 중과 상: 5,000원/kg\n- 중과 중: 4,400원/kg\n- 중과 하: 3,600원/kg\n\n각 품목의 가격은 품질과 크기에 따라 다르니 참고하시기 바랍니다.",
+      "source_count": 4,
+      "response_time_sec": 2.39,
+      "answer_relevancy": 1,
+      "faithfulness": 1,
+      "context_relevance": 1,
+      "hallucination_rate": 0,
+      "korean_quality": 1,
+      "reason": "답변이 질문에 정확히 답변하였고, 제공된 컨텍스트에 기반하여 사실적인 정보를 제공하였습니다. 한국어 표현도 자연스럽습니다."
+    },
+    {
+      "no": 2,
+      "question": "대과 상 등급 kg당 가격은 얼마야?",
+      "answer": "대과 상 등급의 kg당 가격은 7,700원입니다.",
+      "source_count": 4,
+      "response_time_sec": 1.21,
+      "answer_relevancy": 1,
+      "faithfulness": 1,
+      "context_relevance": 1,
+      "hallucination_rate": 0,
+      "korean_quality": 1,
+      "reason": "답변이 질문에 정확히 답변하였고, 제공된 문맥에 기반하여 사실을 전달하였으며, 문맥이 질문에 유용했습니다. 한국어 표현도 자연스럽습니다."
+    },
+    {
+      "no": 3,
+      "question": "현재 재고현황을 크기와 품질별로 알려줘",
+      "answer": "- 대과 상 등급은 기준 가용 재고 620kg 중 쇼핑몰 등록 재고가 50kg이고, 현재 쇼핑몰 추가 등록 가능 재고는 570kg입니다. 쇼핑몰에 남아 판매 중인 수량은 25kg, 판매 완료 수량은 25kg입니다.\n- 대과 중 등급은 기준 가용 재고 520kg 중 쇼핑몰 등록 재고가 0kg이고, 현재 쇼핑몰 추가 등록 가능 재고는 520kg입니다. 쇼핑몰에 남아 판매 중인 수량은 0kg, 판매 완료 수량은 0kg입니다.\n- 대과 하 등급은 기준 가용 재고 260kg 중 쇼핑몰 등록 재고가 0kg이고, 현재 쇼핑몰 추가 등록 가능 재고는 260kg입니다. 쇼핑몰에 남아 판매 중인 수량은 0kg, 판매 완료 수량은 0kg입니다.\n- 중과 상 등급은 기준 가용 재고 700kg 중 쇼핑몰 등록 재고가 0kg이고, 현재 쇼핑몰 추가 등록 가능 재고는 700kg입니다. 쇼핑몰에 남아 판매 중인 수량은 0kg, 판매 완료 수량은 0kg입니다.\n- 중과 중 등급은 기준 가용 재고 620kg 중 쇼핑몰 등록 재고가 0kg이고, 현재 쇼핑몰 추가 등록 가능 재고는 620kg입니다. 쇼핑몰에 남아 판매 중인 수량은 0kg, 판매 완료 수량은 0kg입니다.\n- 중과 하 등급은 기준 가용 재고 320kg 중 쇼핑몰 등록 재고가 10kg이고, 현재 쇼핑몰 추가 등록 가능 재고는 310kg입니다. 쇼핑몰에 남아 판매 중인 수량은 0kg, 판매 완료 수량은 10kg입니다.",
+      "source_count": 1,
+      "response_time_sec": 0.04,
+      "answer_relevancy": 1,
+      "faithfulness": 0.8,
+      "context_relevance": 1,
+      "hallucination_rate": 0.2,
+      "korean_quality": 1,
+      "reason": "답변은 질문에 대한 직접적인 정보를 제공하였으나, 일부 수치가 context와 일치하지 않아 신뢰성에 약간의 문제가 있음."
+    },
+    {
+      "no": 4,
+      "question": "1달 내에 가장 팔기 좋은 날짜가 언제야?",
+      "answer": "가장 팔기 좋은 날짜는 2026년 7월 9일입니다. 이 날의 중앙값 예상가는 5,165원/kg으로, 최근 가격 대비 하락폭이 상대적으로 적습니다. 지금 판매하는 것이 좋습니다.",
+      "source_count": 4,
+      "response_time_sec": 1.82,
+      "answer_relevancy": 0.5,
+      "faithfulness": 0.5,
+      "context_relevance": 1,
+      "hallucination_rate": 0,
+      "korean_quality": 0.8,
+      "reason": "답변이 특정 날짜를 제시했지만, 해당 날짜에 대한 근거가 명확하지 않으며, 가격 예측이 불확실한 상황에서 단정적인 표현을 사용했다. 한국어 표현은 자연스럽지만, 정보의 정확성이 떨어진다."
+    },
+    {
+      "no": 5,
+      "question": "최근 과일 뉴스 중 판매 판단에 영향 있는 내용만 요약해줘",
+      "answer": "최근 과일 뉴스에서 판매 판단에 영향을 미치는 주요 내용은 다음과 같습니다:\n\n1. 명절 특수 종료 후 과일 가격이 하락세를 보이고 있습니다.\n2. 사과의 경우, 대과 부족으로 인해 품위별 가격이 양극화되고 있습니다.\n3. 수요 확대 뉴스가 일부 품목에서 가격 방어 가능성을 시사하고 있습니다.\n\n이러한 정보들은 현재 과일 시장의 가격 변동과 수급 상황에 중요한 영향을 미칠 수 있습니다.",
+      "source_count": 3,
+      "response_time_sec": 2.66,
+      "answer_relevancy": 1,
+      "faithfulness": 1,
+      "context_relevance": 1,
+      "hallucination_rate": 0,
+      "korean_quality": 1,
+      "reason": "답변이 질문에 직접적으로 관련된 내용을 요약하였고, 제공된 정보에 기반하여 사실적으로 작성되었습니다. 한국어 표현도 자연스럽습니다."
+    },
+    {
+      "no": 6,
+      "question": "바나나 수입 관세율을 알려줘",
+      "answer": "이 부분은 확인이 필요합니다. 바나나 수입 관세율에 대한 정보를 확인할 수 있는 자료가 필요합니다. 관련된 정부 기관이나 무역 관련 웹사이트를 참고해 주시기 바랍니다.",
+      "source_count": 0,
+      "response_time_sec": 1.83,
+      "answer_relevancy": 0.5,
+      "faithfulness": 0.5,
+      "context_relevance": 0,
+      "hallucination_rate": 0,
+      "korean_quality": 1,
+      "reason": "답변이 정확한 수치를 제공하지 않고 확인이 필요하다고 안내했으나, 질문에 대한 안전한 응답으로 평가됨."
+    }
+  ]
+}
