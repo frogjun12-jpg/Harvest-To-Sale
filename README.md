@@ -19,21 +19,7 @@
 
 ## 시스템 구조
 
-```mermaid
-flowchart LR
-    Robot["TurtleBot / Robot Arm"] --> API["FastAPI"]
-    Admin["Admin Dashboard"] --> API
-    Shop["Apple Market"] --> API
-
-    API --> DB["MariaDB<br/>Inventory / Orders / Harvest"]
-    API --> RAG["RAG Retriever"]
-    RAG --> VDB["MariaDB Vector Search<br/>rag_documents"]
-    RAG --> LLM["LLM"]
-    LLM --> API
-
-    Docs["rag_docs<br/>price forecast / news / suppliers"] --> Embed["Embedding"]
-    Embed --> VDB
-```
+![LLM 중심 시스템 구성도](output/project-architecture-llm-centered.png)
 
 RAG 문서는 `rag_docs/`의 Markdown 파일을 chunk 단위로 분할한 뒤 임베딩 벡터로 변환하여 MariaDB의 `rag_documents` 테이블에 저장합니다. 사용자의 질문도 임베딩한 뒤 `VEC_DISTANCE_COSINE()` 기반 Vector Search로 관련 문서를 찾고, 검색 결과를 LLM 프롬프트에 포함해 답변을 생성합니다.
 
